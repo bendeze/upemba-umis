@@ -4,6 +4,10 @@ import py_compile
 from setuptools import setup, find_packages
 from setuptools.command.build_py import build_py
 
+# Toggle this flag to True if you want to compile into bytecode (.pyc) and hide the source code
+# (Note: bytecode compilation binds the wheel to a specific Python version, e.g. Python 3.13)
+OBFUSCATE_SOURCE = False
+
 class ObfuscatedBuildPy(build_py):
     """
     Custom build command that compiles all python files in the distribution
@@ -13,6 +17,14 @@ class ObfuscatedBuildPy(build_py):
     def run(self):
         # 1. Execute standard setuptools build first to collect files in build/lib
         super().run()
+        
+        if not OBFUSCATE_SOURCE:
+            print("\n=======================================================")
+            print("   UMIS UNIVERSAL BUILD PIPELINE: ALL PYTHON VERSIONS ")
+            print("=======================================================")
+            print(" -> Source obfuscation disabled. Building a universal wheel.")
+            print("=======================================================\n")
+            return
         
         build_lib = self.build_lib
         print(f"\n=======================================================")

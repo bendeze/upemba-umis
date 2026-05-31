@@ -36,13 +36,13 @@ urlpatterns = [
     path('api/v1/', include('beneficiaries.urls')),
     
     # Serve pre-compiled static Next.js frontend assets (for offline wheel distribution)
-    path('_next/<path:path>', serve, {'document_root': os.path.join(settings.BASE_DIR, 'static', '_next')}),
-    path('favicon.ico', serve, {'document_root': os.path.join(settings.BASE_DIR, 'static'), 'path': 'favicon.ico'}),
-    path('file.svg', serve, {'document_root': os.path.join(settings.BASE_DIR, 'static'), 'path': 'file.svg'}),
-    path('globe.svg', serve, {'document_root': os.path.join(settings.BASE_DIR, 'static'), 'path': 'globe.svg'}),
-    path('next.svg', serve, {'document_root': os.path.join(settings.BASE_DIR, 'static'), 'path': 'next.svg'}),
-    path('vercel.svg', serve, {'document_root': os.path.join(settings.BASE_DIR, 'static'), 'path': 'vercel.svg'}),
-    path('window.svg', serve, {'document_root': os.path.join(settings.BASE_DIR, 'static'), 'path': 'window.svg'}),
+    path('_next/<path:path>', serve, {'document_root': os.path.join(settings.BASE_DIR, 'core', 'static', '_next')}),
+    path('favicon.ico', serve, {'document_root': os.path.join(settings.BASE_DIR, 'core', 'static'), 'path': 'favicon.ico'}),
+    path('file.svg', serve, {'document_root': os.path.join(settings.BASE_DIR, 'core', 'static'), 'path': 'file.svg'}),
+    path('globe.svg', serve, {'document_root': os.path.join(settings.BASE_DIR, 'core', 'static'), 'path': 'globe.svg'}),
+    path('next.svg', serve, {'document_root': os.path.join(settings.BASE_DIR, 'core', 'static'), 'path': 'next.svg'}),
+    path('vercel.svg', serve, {'document_root': os.path.join(settings.BASE_DIR, 'core', 'static'), 'path': 'vercel.svg'}),
+    path('window.svg', serve, {'document_root': os.path.join(settings.BASE_DIR, 'core', 'static'), 'path': 'window.svg'}),
     
     # Serve pre-compiled static Next.js frontend home page
     path('', IndexView.as_view(), name='index'),

@@ -1,1 +1,2 @@
-recursive-include static *
+recursive-include core/static *
+recursive-include core/templates *

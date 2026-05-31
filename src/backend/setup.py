@@ -54,8 +54,8 @@ setup(
     py_modules=["cli"], # CLI launcher module
     include_package_data=True,
     package_data={
-        # Recursively include Next.js pre-compiled static assets
-        "": ["static/**/*", "static/*"],
+        # Recursively include Next.js pre-compiled static assets and templates
+        "core": ["static/**/*", "static/*", "templates/**/*", "templates/*"],
     },
     install_requires=[
         "django>=6.0.5",

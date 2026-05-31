@@ -42,8 +42,10 @@ jobs:
       # 5. Integrate Pre-compiled Frontend into Backend Static Staging
       - name: Integrate Frontend Statically in Django
         run: |
-          mkdir -p src/backend/static
-          cp -r src/frontend/out/* src/backend/static/
+          mkdir -p src/backend/core/templates
+          mkdir -p src/backend/core/static
+          cp src/frontend/out/index.html src/backend/core/templates/index.html
+          cp -r src/frontend/out/* src/backend/core/static/
 
       # 6. Install Packaging Utilities
       - name: Install Wheel Builders

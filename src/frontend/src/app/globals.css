@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f0fbfd; /* Light clinical cyan bg */
+  --foreground: #004d40; /* Deep dark teal foreground */
+  
+  --card: #ffffff;
+  --card-foreground: #004d40;
+  
+  --popover: #ffffff;
+  --popover-foreground: #004d40;
+  
+  --primary: #26c6da; /* Vibrant Cyan #26C6DA from palette */
+  --primary-foreground: #ffffff;
+  
+  --secondary: #b2ebf2; /* Soft Cyan #B2EBF2 from palette */
+  --secondary-foreground: #006064; /* Deep Cyan */
+  
+  --muted: #e0f7fa; /* Airy Cyan #E0F7FA from palette */
+  --muted-foreground: #00838f; /* Medium-Dark Cyan */
+  
+  --accent: #80deea; /* Soft Active Cyan #80DEEA from palette */
+  --accent-foreground: #006064;
+  
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  --border: #b2ebf2; /* Soft Cyan borders */
+  --input: #f0fbfd;
+  --ring: #26c6da;
+  
+  --radius: 0.75rem;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--color-card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 8px);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Glassmorphism custom components */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Smooth transition defaults */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Custom scrollbars for clean layouts */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

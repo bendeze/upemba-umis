@@ -1,0 +1,96 @@
+import uuid
+from django.db import models
+from core.models import TimeStampedModel, SoftDeleteModel
+
+class Region(TimeStampedModel):
+    """
+    Region of operations (e.g., Lubumbashi, Park Headquarters).
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, unique=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Site(TimeStampedModel):
+    """
+    Operational healthcare facility or work site inside a region.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name='sites')
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'region'], name='unique_site_per_region')
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.region.name})"
+
+
+class Employee(TimeStampedModel, SoftDeleteModel):
+    """
+    Employees of Upemba National Park.
+    """
+    STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('INACTIVE', 'Inactive'),
+        ('SUSPENDED', 'Suspended'),
+        ('RETIRED', 'Retired'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee_number = models.CharField(max_length=100, unique=True, db_index=True)
+    last_name = models.CharField(max_length=255)
+    post_name = models.CharField(max_length=255, null=True, blank=True)
+    first_name = models.CharField(max_length=255)
+    site = models.ForeignKey(Site, on_delete=models.PROTECT, related_name='employees')
+    address = models.TextField(null=True, blank=True)
+    employment_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+
+    class Meta:
+        ordering = ['last_name', 'first_name']
+
+    def __str__(self):
+        post_name_str = f" {self.post_name}" if self.post_name else ""
+        return f"[{self.employee_number}] {self.last_name}{post_name_str} {self.first_name}"
+
+
+class Dependent(TimeStampedModel):
+    """
+    Eligible dependents of an employee (Spouse or Child).
+    """
+    RELATIONSHIP_CHOICES = [
+        ('SPOUSE', 'Spouse'),
+        ('CHILD', 'Child'),
+    ]
+
+    GENDER_CHOICES = [
+        ('M', 'Male'),
+        ('F', 'Female'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='dependents')
+    full_name = models.CharField(max_length=255)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
+    birth_date = models.DateField(null=True, blank=True)
+    relationship = models.CharField(max_length=20, choices=RELATIONSHIP_CHOICES)
+
+    class Meta:
+        ordering = ['relationship', 'full_name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['employee', 'full_name', 'relationship'],
+                name='unique_dependent_per_employee'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.full_name} ({self.relationship} of {self.employee.employee_number})"

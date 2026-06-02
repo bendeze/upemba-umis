@@ -1,20 +1,29 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { dependentFormSchema, DependentFormValues } from '../validation';
-import { useAddDependent } from '../hooks/use-beneficiaries';
+import { useAddDependent, useUpdateDependent } from '../hooks/use-beneficiaries';
+import { Dependent } from '../types';
 import { X, Loader2, Save } from 'lucide-react';
 
 interface DependentDialogProps {
   employeeId: string;
   employeeName: string;
+  dependent?: Dependent | null; // If passed, we are in Edit Mode
   onClose: () => void;
 }
 
-export const DependentDialog: React.FC<DependentDialogProps> = ({ employeeId, employeeName, onClose }) => {
+export const DependentDialog: React.FC<DependentDialogProps> = ({ 
+  employeeId, 
+  employeeName, 
+  dependent, 
+  onClose 
+}) => {
+  const isEditMode = !!dependent;
   const addDependentMutation = useAddDependent(employeeId);
+  const updateDependentMutation = useUpdateDependent(employeeId);
 
   // React Hook Form
   const { 
@@ -33,19 +42,42 @@ export const DependentDialog: React.FC<DependentDialogProps> = ({ employeeId, em
     }
   });
 
+  // Load values if edit mode
+  useEffect(() => {
+    if (dependent) {
+      setValue('full_name', dependent.full_name);
+      setValue('gender', dependent.gender);
+      setValue('relationship', dependent.relationship);
+      setValue('birth_date', dependent.birth_date || '');
+    }
+  }, [dependent, setValue]);
+
   const selectedRelationship = watch('relationship');
 
   const onSubmit = async (values: DependentFormValues) => {
     try {
-      await addDependentMutation.mutateAsync({
-        full_name: values.full_name,
-        gender: values.gender,
-        relationship: values.relationship,
-        birth_date: values.birth_date || undefined
-      });
+      if (isEditMode && dependent) {
+        await updateDependentMutation.mutateAsync({
+          id: dependent.id,
+          data: {
+            full_name: values.full_name,
+            gender: values.gender,
+            relationship: values.relationship,
+            birth_date: values.birth_date || undefined,
+            employee: dependent.employee,
+          }
+        });
+      } else {
+        await addDependentMutation.mutateAsync({
+          full_name: values.full_name,
+          gender: values.gender,
+          relationship: values.relationship,
+          birth_date: values.birth_date || undefined
+        });
+      }
       onClose();
     } catch (err: any) {
-      alert(err.message || 'An error occurred while adding dependent.');
+      alert(err.message || `An error occurred while ${isEditMode ? 'updating' : 'adding'} dependent.`);
     }
   };
 
@@ -58,8 +90,12 @@ export const DependentDialog: React.FC<DependentDialogProps> = ({ employeeId, em
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
           <div>
-            <h3 className="text-base font-bold text-slate-800">Add Ayant Droit</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Linking dependent to {employeeName}</p>
+            <h3 className="text-base font-bold text-slate-800">
+              {isEditMode ? 'Modify Ayant Droit' : 'Add Ayant Droit'}
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {isEditMode ? 'Updating dependent info for' : 'Linking dependent to'} {employeeName}
+            </p>
           </div>
           <button 
             onClick={onClose}
@@ -159,12 +195,12 @@ export const DependentDialog: React.FC<DependentDialogProps> = ({ employeeId, em
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Adding...
+                {isEditMode ? 'Saving...' : 'Adding...'}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                Add Dependent
+                {isEditMode ? 'Save Changes' : 'Add Dependent'}
               </>
             )}
           </button>

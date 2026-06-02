@@ -27,18 +27,18 @@ class DependentInline(admin.TabularInline):
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = (
         'employee_number', 
-        'last_name', 
-        'post_name', 
-        'first_name', 
+        'nom', 
+        'post_nom', 
+        'prenom', 
         'site', 
         'employment_status', 
         'is_deleted',
         'created_at'
     )
-    search_fields = ('employee_number', 'last_name', 'post_name', 'first_name', 'address')
+    search_fields = ('employee_number', 'nom', 'post_nom', 'prenom', 'address')
     list_filter = ('site__region', 'site', 'employment_status', 'is_deleted')
     inlines = [DependentInline]
-    ordering = ('last_name', 'first_name')
+    ordering = ('nom', 'prenom')
     actions = ['soft_delete_action', 'restore_action']
 
     @admin.action(description="Soft-delete selected employees")
@@ -55,6 +55,6 @@ class EmployeeAdmin(admin.ModelAdmin):
 @admin.register(Dependent)
 class DependentAdmin(admin.ModelAdmin):
     list_display = ('full_name', 'employee', 'relationship', 'gender', 'birth_date', 'created_at')
-    search_fields = ('full_name', 'employee__employee_number', 'employee__last_name')
+    search_fields = ('full_name', 'employee__employee_number', 'employee__nom')
     list_filter = ('relationship', 'gender')
     ordering = ('employee', 'relationship', 'full_name')

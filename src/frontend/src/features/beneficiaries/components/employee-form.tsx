@@ -12,6 +12,7 @@ import {
 } from '../hooks/use-beneficiaries';
 import { Employee } from '../types';
 import { X, Loader2, Save } from 'lucide-react';
+import { useTranslation } from '@/features/i18n/store/use-i18n-store';
 
 interface EmployeeFormProps {
   employee?: Employee | null; // If passed, we are in Edit Mode
@@ -19,6 +20,7 @@ interface EmployeeFormProps {
 }
 
 export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
+  const { t } = useTranslation();
   const isEditMode = !!employee;
   const { data: regions } = useRegions();
   
@@ -230,16 +232,16 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
           {/* Employment Status */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-              Employment Status *
+              {t('employee.drawer.status')} *
             </label>
             <select
               {...register('employment_status')}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition appearance-none cursor-pointer"
             >
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-              <option value="SUSPENDED">Suspended</option>
-              <option value="RETIRED">Retired</option>
+              <option value="ACTIVE">{t('table.statusActive')}</option>
+              <option value="INACTIVE">{t('table.statusInactive')}</option>
+              <option value="SUSPENDED">{t('table.statusSuspended')}</option>
+              <option value="RETIRED">{t('table.statusRetired')}</option>
             </select>
           </div>
 

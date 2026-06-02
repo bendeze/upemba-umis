@@ -21,7 +21,7 @@ class Site(TimeStampedModel):
     Operational healthcare facility or work site inside a region.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name='sites')
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name='sites')
     name = models.CharField(max_length=255)
 
     class Meta:
@@ -47,19 +47,19 @@ class Employee(TimeStampedModel, SoftDeleteModel):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee_number = models.CharField(max_length=100, unique=True, db_index=True)
-    last_name = models.CharField(max_length=255)
-    post_name = models.CharField(max_length=255, null=True, blank=True)
-    first_name = models.CharField(max_length=255)
-    site = models.ForeignKey(Site, on_delete=models.PROTECT, related_name='employees')
+    nom = models.CharField(max_length=255)
+    post_nom = models.CharField(max_length=255, null=True, blank=True)
+    prenom = models.CharField(max_length=255)
+    site = models.ForeignKey(Site, on_delete=models.SET_NULL, null=True, blank=True, related_name='employees')
     address = models.TextField(null=True, blank=True)
     employment_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
 
     class Meta:
-        ordering = ['last_name', 'first_name']
+        ordering = ['nom', 'prenom']
 
     def __str__(self):
-        post_name_str = f" {self.post_name}" if self.post_name else ""
-        return f"[{self.employee_number}] {self.last_name}{post_name_str} {self.first_name}"
+        post_name_str = f" {self.post_nom}" if self.post_nom else ""
+        return f"[{self.employee_number}] {self.nom}{post_name_str} {self.prenom}"
 
 
 class Dependent(TimeStampedModel):

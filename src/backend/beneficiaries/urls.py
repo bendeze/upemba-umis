@@ -6,6 +6,8 @@ from beneficiaries.views import (
     EmployeeViewSet,
     DependentViewSet,
     ExcelImportView,
+    ExcelImportUrlView,
+    ExcelExportView,
     AuditLogListView
 )
 
@@ -21,5 +23,7 @@ urlpatterns = [
     
     # Custom business endpoints
     path('beneficiaries/import/', ExcelImportView.as_view(), name='beneficiaries-import'),
+    path('beneficiaries/import-url/', ExcelImportUrlView.as_view(), name='beneficiaries-import-url'),
+    path('beneficiaries/export/', ExcelExportView.as_view(), name='beneficiaries-export'),
     path('audit-logs/', AuditLogListView.as_view(), name='audit-logs-list'),
 ]

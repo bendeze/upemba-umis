@@ -10,11 +10,11 @@ from beneficiaries.models import Region, Site, Employee, Dependent
 class EmployeeService:
     @staticmethod
     @transaction.atomic
-    def create_employee(user, employee_number, last_name, first_name, site_id, post_name=None, address=None, employment_status='ACTIVE'):
+    def create_employee(user, employee_number, nom, prenom, site_id=None, post_nom=None, address=None, employment_status='ACTIVE'):
         """
         Creates a new employee and logs the transaction.
         """
-        site = Site.objects.get(pk=site_id)
+        site = Site.objects.get(pk=site_id) if site_id else None
         
         # Check duplicate employee number
         if Employee.objects.filter(employee_number=employee_number).exists():
@@ -22,9 +22,9 @@ class EmployeeService:
 
         employee = Employee.objects.create(
             employee_number=employee_number,
-            last_name=last_name.upper().strip(),
-            post_name=post_name.strip() if post_name else None,
-            first_name=first_name.strip(),
+            nom=nom.upper().strip(),
+            post_nom=post_nom.strip() if post_nom else None,
+            prenom=prenom.strip(),
             site=site,
             address=address,
             employment_status=employment_status
@@ -36,8 +36,8 @@ class EmployeeService:
             instance=employee,
             changes={
                 "employee_number": [None, employee.employee_number],
-                "name": [None, f"{employee.last_name} {employee.first_name}"],
-                "site": [None, site.name]
+                "name": [None, f"{employee.nom} {employee.prenom}"],
+                "site": [None, site.name if site else None]
             }
         )
         return employee
@@ -56,9 +56,9 @@ class EmployeeService:
                 old_val = getattr(employee, field)
                 
                 # Special styling constraints
-                if field == 'last_name' and value:
+                if field == 'nom' and value:
                     value = value.upper().strip()
-                elif field in ['first_name', 'post_name'] and value:
+                elif field in ['prenom', 'post_nom'] and value:
                     value = value.strip()
                 
                 if old_val != value:
@@ -127,19 +127,29 @@ class ExcelImportService:
     @staticmethod
     def _parse_names(full_name_str):
         """
-        Parses combined 'Post-nom et Prénom' into post_name and first_name.
-        Assumes first token is post_name, subsequent tokens are first_name.
+        Parses combined 'Post-nom et Prénom' into post_nom, prenom, and nom.
+        Tailored to DRC naming conventions:
+        - If 1 token is found: Treated as nom, post_nom and prenom are empty.
+        - If 2 tokens are found: First is nom, second is post_nom, prenom is empty.
+        - If 3 or more tokens are found: First is nom, last is prenom, middle tokens are post_nom.
         """
         if not full_name_str:
-            return "", ""
+            return "", "", ""
         
         tokens = [t.strip() for t in str(full_name_str).split() if t.strip()]
         if not tokens:
-            return "", ""
+            return "", "", ""
         
-        post_name = tokens[0]
-        first_name = " ".join(tokens[1:]) if len(tokens) > 1 else ""
-        return post_name, first_name
+        if len(tokens) == 1:
+            return "", "", tokens[0]
+            
+        if len(tokens) == 2:
+            return tokens[1], "", tokens[0]
+            
+        nom = tokens[0]
+        prenom = tokens[-1]
+        post_nom = " ".join(tokens[1:-1])
+        return post_nom, prenom, nom
 
     @staticmethod
     def _generate_employee_number(sequence):
@@ -272,26 +282,57 @@ class ExcelImportService:
 
                 # --- 1. PROCESS EMPLOYEE ---
                 if nom_val or post_prenom_val:
-                    post_name, first_name = cls._parse_names(post_prenom_val)
+                    post_nom, prenom, parsed_nom = cls._parse_names(post_prenom_val)
+                    employee_nom = (nom_val if nom_val else parsed_nom).strip().upper()
                     
                     # Deduplicate Employee by name within region/site
                     existing_employees = Employee.objects.filter(
-                        last_name=nom_val.upper(),
-                        post_name=post_name if post_name else None,
-                        first_name=first_name,
+                        nom=employee_nom,
+                        post_nom=post_nom if post_nom else None,
+                        prenom=prenom,
                         site__region=region
                     )
                     
                     if existing_employees.exists():
                         current_employee = existing_employees.first()
                         report["summary"]["employees_updated"] += 1
-                        report["logs"].append({
-                            "level": "WARNING",
-                            "sheet": region_name,
-                            "row": r_idx,
-                            "message": f"Employee '{nom_val} {post_prenom_val}' already exists. Appending dependents."
-                        })
-                        report["summary"]["warnings_count"] += 1
+                        
+                        # Update employee fields if changed
+                        updated_fields = {}
+                        if adresse_val and current_employee.address != adresse_val:
+                            old_address = current_employee.address
+                            current_employee.address = adresse_val
+                            updated_fields["address"] = [old_address, adresse_val]
+                            
+                        if n_val and not n_val.isdigit() and current_employee.employee_number != n_val:
+                            old_emp_no = current_employee.employee_number
+                            current_employee.employee_number = n_val
+                            updated_fields["employee_number"] = [old_emp_no, n_val]
+                        
+                        if updated_fields:
+                            current_employee.save()
+                            log_action(
+                                user=user,
+                                action='UPDATE',
+                                instance=current_employee,
+                                changes=updated_fields
+                            )
+                            display_name = f"{nom_val} {post_prenom_val}".strip() if nom_val else f"{employee_nom} {post_prenom_val}".strip()
+                            report["logs"].append({
+                                "level": "INFO",
+                                "sheet": region_name,
+                                "row": r_idx,
+                                "message": f"Employee '{display_name}' already exists and was updated with new data: {', '.join(updated_fields.keys())}. Appending dependents."
+                            })
+                        else:
+                            display_name = f"{nom_val} {post_prenom_val}".strip() if nom_val else f"{employee_nom} {post_prenom_val}".strip()
+                            report["logs"].append({
+                                "level": "WARNING",
+                                "sheet": region_name,
+                                "row": r_idx,
+                                "message": f"Employee '{display_name}' already exists. Appending dependents."
+                            })
+                            report["summary"]["warnings_count"] += 1
                     else:
                         # Auto generate employee number if missing or numeric index
                         employee_number = n_val if n_val and not n_val.isdigit() else cls._generate_employee_number(emp_sequence)
@@ -300,9 +341,9 @@ class ExcelImportService:
                         try:
                             current_employee = Employee.objects.create(
                                 employee_number=employee_number,
-                                last_name=nom_val.upper(),
-                                post_name=post_name if post_name else None,
-                                first_name=first_name,
+                                nom=employee_nom,
+                                post_nom=post_nom if post_nom else None,
+                                prenom=prenom,
                                 site=site,
                                 address=adresse_val
                             )
@@ -316,17 +357,18 @@ class ExcelImportService:
                                 instance=current_employee,
                                 changes={
                                     "employee_number": [None, current_employee.employee_number],
-                                    "name": [None, f"{current_employee.last_name} {current_employee.first_name}"],
+                                    "name": [None, f"{current_employee.nom} {current_employee.prenom}"],
                                     "site": [None, site.name]
                                 }
                             )
                         except Exception as e:
                             report["summary"]["errors_count"] += 1
+                            display_name = nom_val if nom_val else employee_nom
                             report["logs"].append({
                                 "level": "ERROR",
                                 "sheet": region_name,
                                 "row": r_idx,
-                                "message": f"Failed to create employee '{nom_val}': {str(e)}"
+                                "message": f"Failed to create employee '{display_name}': {str(e)}"
                             })
                             current_employee = None
                             continue
@@ -400,8 +442,52 @@ class ExcelImportService:
                             })
                             report["summary"]["warnings_count"] += 1
 
-                    # Create child
-                    if not Dependent.objects.filter(employee=current_employee, full_name=enfant_val, relationship='CHILD').exists():
+                    # Create or update child
+                    existing_child = Dependent.objects.filter(employee=current_employee, full_name=enfant_val, relationship='CHILD').first()
+                    if existing_child:
+                        updated_child_fields = {}
+                        if gender_mapped and existing_child.gender != gender_mapped:
+                            old_gender = existing_child.gender
+                            existing_child.gender = gender_mapped
+                            updated_child_fields["gender"] = [old_gender, gender_mapped]
+                        
+                        from datetime import datetime
+                        parsed_birth_date = None
+                        if birth_date:
+                            try:
+                                parsed_birth_date = datetime.strptime(birth_date, "%Y-%m-%d").date()
+                            except ValueError:
+                                pass
+                                
+                        if parsed_birth_date and existing_child.birth_date != parsed_birth_date:
+                            old_birth = str(existing_child.birth_date) if existing_child.birth_date else None
+                            existing_child.birth_date = parsed_birth_date
+                            updated_child_fields["birth_date"] = [old_birth, str(parsed_birth_date)]
+                            
+                        if updated_child_fields:
+                            try:
+                                existing_child.save()
+                                log_action(
+                                    user=user,
+                                    action='UPDATE',
+                                    instance=existing_child,
+                                    changes=updated_child_fields
+                                )
+                                report["logs"].append({
+                                    "level": "INFO",
+                                    "sheet": region_name,
+                                    "row": r_idx,
+                                    "message": f"Dependent child '{enfant_val}' already exists and was updated with new data: {', '.join(updated_child_fields.keys())}."
+                                })
+                            except Exception as e:
+                                report["summary"]["errors_count"] += 1
+                                report["logs"].append({
+                                    "level": "ERROR",
+                                    "sheet": region_name,
+                                    "row": r_idx,
+                                    "message": f"Failed to update child '{enfant_val}' details: {str(e)}"
+                                })
+                    else:
                         try:
                             dep = Dependent.objects.create(
                                 employee=current_employee,

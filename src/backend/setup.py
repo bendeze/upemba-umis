@@ -76,6 +76,7 @@ setup(
         "djangorestframework>=3.17.1",
         "djangorestframework-simplejwt>=5.5.1",
         "openpyxl>=3.1.5",
+        "requests>=2.32.3",
         "uvicorn>=0.22.0",
     ],
     entry_points={

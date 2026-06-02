@@ -24,8 +24,8 @@ class BeneficiariesModelTests(TestCase):
         # Create employee
         emp = Employee.objects.create(
             employee_number="EMP-001",
-            last_name="ILUNGA",
-            first_name="Jean",
+            nom="ILUNGA",
+            prenom="Jean",
             site=self.site
         )
         
@@ -56,17 +56,17 @@ class BeneficiariesServiceTests(TestCase):
         emp = EmployeeService.create_employee(
             user=self.user,
             employee_number="EMP-100",
-            last_name="mutombo",
-            first_name="Felix",
+            nom="mutombo",
+            prenom="Felix",
             site_id=self.site.pk,
-            post_name="kabange",
+            post_nom="kabange",
             address="Lusinga Station HQ"
         )
         
         # Verify last name converted to uppercase
-        self.assertEqual(emp.last_name, "MUTOMBO")
-        self.assertEqual(emp.post_name, "kabange")
-        self.assertEqual(emp.first_name, "Felix")
+        self.assertEqual(emp.nom, "MUTOMBO")
+        self.assertEqual(emp.post_nom, "kabange")
+        self.assertEqual(emp.prenom, "Felix")
         
         # Verify audit log was created
         audit = AuditLog.objects.filter(entity_id=str(emp.pk)).first()
@@ -78,33 +78,33 @@ class BeneficiariesServiceTests(TestCase):
         emp = EmployeeService.create_employee(
             user=self.user,
             employee_number="EMP-101",
-            last_name="KABULO",
-            first_name="Marc",
+            nom="KABULO",
+            prenom="Marc",
             site_id=self.site.pk
         )
         
         EmployeeService.update_employee(
             user=self.user,
             employee_id=emp.pk,
-            first_name="Marcus",
+            prenom="Marcus",
             employment_status="INACTIVE"
         )
         
         emp.refresh_from_db()
-        self.assertEqual(emp.first_name, "Marcus")
+        self.assertEqual(emp.prenom, "Marcus")
         self.assertEqual(emp.employment_status, "INACTIVE")
         
         # Verify audit logs track updates
         updates = AuditLog.objects.filter(entity_id=str(emp.pk), action="UPDATE")
         self.assertTrue(updates.exists())
-        self.assertIn("first_name", updates.first().changes)
+        self.assertIn("prenom", updates.first().changes)
 
     def test_add_dependent_service(self):
         emp = EmployeeService.create_employee(
             user=self.user,
             employee_number="EMP-102",
-            last_name="KABILA",
-            first_name="Joseph",
+            nom="KABILA",
+            prenom="Joseph",
             site_id=self.site.pk
         )
         
@@ -133,6 +133,42 @@ class BeneficiariesServiceTests(TestCase):
 class ExcelImportServiceTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="importer", password="password")
+
+    def test_parse_names_logic(self):
+        # 1 token (Treated as nom, post_nom and prenom are empty)
+        post, first, last = ExcelImportService._parse_names("Jean")
+        self.assertEqual(post, "")
+        self.assertEqual(first, "")
+        self.assertEqual(last, "Jean")
+
+        # 2 tokens (First is nom, second is post_nom, prenom is empty)
+        post, first, last = ExcelImportService._parse_names("Mwamba Jean")
+        self.assertEqual(post, "Jean")
+        self.assertEqual(first, "")
+        self.assertEqual(last, "Mwamba")
+
+        # 3 tokens (First is nom, last is prenom, middle tokens are post_nom)
+        post, first, last = ExcelImportService._parse_names("Mwamba Ilunga Jean")
+        self.assertEqual(post, "Ilunga")
+        self.assertEqual(first, "Jean")
+        self.assertEqual(last, "Mwamba")
+
+        # 4 tokens (First is nom, last is prenom, middle tokens are post_nom)
+        post, first, last = ExcelImportService._parse_names("Mwamba Ilunga Kabulo Jean")
+        self.assertEqual(post, "Ilunga Kabulo")
+        self.assertEqual(first, "Jean")
+        self.assertEqual(last, "Mwamba")
+
+        # Empty/None checks
+        post, first, last = ExcelImportService._parse_names("")
+        self.assertEqual(post, "")
+        self.assertEqual(first, "")
+        self.assertEqual(last, "")
+
+        post, first, last = ExcelImportService._parse_names(None)
+        self.assertEqual(post, "")
+        self.assertEqual(first, "")
+        self.assertEqual(last, "")
 
     def test_excel_import_pipeline(self):
         # Create a mock Excel file in memory
@@ -171,7 +207,7 @@ class ExcelImportServiceTests(TestCase):
         region = Region.objects.filter(name="Lusinga Region").first()
         self.assertIsNotNone(region)
         
-        emp1 = Employee.objects.filter(last_name="KYALANGILWA", post_name="Mwamba", first_name="Jean").first()
+        emp1 = Employee.objects.filter(nom="KYALANGILWA", post_nom="Jean", prenom="").first()
         self.assertIsNotNone(emp1)
         self.assertEqual(emp1.employee_number, "EMP-2026-0001")
         self.assertEqual(emp1.address, "Station Lusinga Q1")
@@ -196,7 +232,7 @@ class ExcelImportServiceTests(TestCase):
         self.assertEqual(child2.birth_date.year, 2015)
         
         # Verify emp2
-        emp2 = Employee.objects.filter(last_name="KASONGO").first()
+        emp2 = Employee.objects.filter(nom="KASONGO").first()
         self.assertIsNotNone(emp2)
         self.assertEqual(emp2.employee_number, "EMP-2026-0002")
         self.assertEqual(emp2.dependents.count(), 1)

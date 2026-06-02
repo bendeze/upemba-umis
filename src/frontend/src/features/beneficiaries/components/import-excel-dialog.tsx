@@ -3,6 +3,8 @@
 import React, { useState, useRef } from 'react';
 import { useImportExcel } from '../hooks/use-beneficiaries';
 import { ImportReport, ImportLog } from '../types';
+import { useTranslation } from '@/features/i18n/store/use-i18n-store';
+import { api } from '../services/api';
 import { 
   X, 
   Upload, 
@@ -20,12 +22,20 @@ interface ImportExcelDialogProps {
 }
 
 export const ImportExcelDialog: React.FC<ImportExcelDialogProps> = ({ onClose }) => {
+  const { t } = useTranslation();
   const importExcelMutation = useImportExcel();
   
+  // Tab states
+  const [activeTab, setActiveTab] = useState<'local' | 'cloud'>('local');
+
   // Drag and drop states
   const [isDragActive, setIsDragActive] = useState<boolean>(false);
   const [file, setFile] = useState<File | null>(null);
   
+  // Cloud states
+  const [cloudUrl, setCloudUrl] = useState<string>('');
+  const [isCloudImporting, setIsCloudImporting] = useState<boolean>(false);
+
   // Report states
   const [report, setReport] = useState<ImportReport | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -53,7 +63,7 @@ export const ImportExcelDialog: React.FC<ImportExcelDialogProps> = ({ onClose })
         setFile(droppedFile);
         setErrorText(null);
       } else {
-        setErrorText('Invalid file format. Only Excel workbooks (.xlsx or .xls) are supported.');
+        setErrorText(t('import.cloudInvalidUrl'));
       }
     }
   };
@@ -78,6 +88,20 @@ export const ImportExcelDialog: React.FC<ImportExcelDialogProps> = ({ onClose })
       setReport(res);
     } catch (err: any) {
       setErrorText(err.message || 'Excel parsing failed.');
+    }
+  };
+
+  const handleCloudSubmit = async () => {
+    if (!cloudUrl.trim()) return;
+    setIsCloudImporting(true);
+    setErrorText(null);
+    try {
+      const res = await api.importExcelFromUrl(cloudUrl.trim());
+      setReport(res);
+    } catch (err: any) {
+      setErrorText(err.message || t('import.cloudInvalidUrl'));
+    } finally {
+      setIsCloudImporting(false);
     }
   };
 
@@ -114,7 +138,7 @@ export const ImportExcelDialog: React.FC<ImportExcelDialogProps> = ({ onClose })
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
             <h3 className="text-base font-bold text-slate-800">
-              Bulk Beneficiary Ingestion Engine
+              {t('import.title')}
             </h3>
           </div>
           <button 
@@ -125,87 +149,166 @@ export const ImportExcelDialog: React.FC<ImportExcelDialogProps> = ({ onClose })
           </button>
         </div>
 
+        {/* Tab Switcher */}
+        {!report && (
+          <div className="flex border-b border-slate-200 bg-slate-50 px-6">
+            <button
+              onClick={() => { setActiveTab('local'); setErrorText(null); }}
+              className={`py-3 px-4 text-sm font-semibold border-b-2 transition cursor-pointer ${
+                activeTab === 'local'
+                  ? 'border-teal-600 text-teal-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {t('import.tabLocal')}
+            </button>
+            <button
+              onClick={() => { setActiveTab('cloud'); setErrorText(null); }}
+              className={`py-3 px-4 text-sm font-semibold border-b-2 transition cursor-pointer ${
+                activeTab === 'cloud'
+                  ? 'border-teal-600 text-teal-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {t('import.tabCloud')}
+            </button>
+          </div>
+        )}
+
         {/* Scrollable Modal Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {!report ? (
-            /* --- STEP 1: FILE LANDING TARGET --- */
-            <div className="space-y-4">
-              <div
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-                onClick={handleUploadClick}
-                className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-12 text-center transition cursor-pointer ${
-                  isDragActive 
-                    ? 'border-teal-500 bg-teal-50/20' 
-                    : file 
-                      ? 'border-emerald-500 bg-emerald-50/10' 
-                      : 'border-slate-300 hover:border-slate-400 bg-slate-50/50'
-                }`}
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept=".xlsx, .xls"
-                  className="hidden"
-                />
-                
-                {file ? (
-                  <>
-                    <FileSpreadsheet className="h-12 w-12 text-emerald-600 mb-3 animate-bounce" />
-                    <h4 className="text-sm font-bold text-slate-800 truncate max-w-xs">{file.name}</h4>
-                    <p className="text-xs text-slate-500 mt-1">{(file.size / 1024).toFixed(1)} KB</p>
-                    <button 
-                      type="button" 
-                      onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                      className="mt-3 text-xs text-red-500 font-semibold hover:underline cursor-pointer"
-                    >
-                      Remove file
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-12 w-12 text-slate-400 mb-3" />
-                    <h4 className="text-sm font-bold text-slate-800">Drag & Drop Beneficiaries Roster</h4>
-                    <p className="text-xs text-slate-500 mt-1 max-w-xs leading-relaxed">
-                      Upload your Excel workbook. Each worksheet represents a **Region** with employees, spouses, and children.
-                    </p>
-                    <span className="mt-4 px-3 py-1.5 bg-white border border-slate-300 rounded text-xs font-semibold text-slate-700 shadow-sm">
-                      Browse Files
-                    </span>
-                  </>
+            activeTab === 'local' ? (
+              /* --- STEP 1: FILE LANDING TARGET (Local) --- */
+              <div className="space-y-4">
+                <div
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={handleUploadClick}
+                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-12 text-center transition cursor-pointer ${
+                    isDragActive 
+                      ? 'border-teal-500 bg-teal-50/20' 
+                      : file 
+                        ? 'border-emerald-500 bg-emerald-50/10' 
+                        : 'border-slate-300 hover:border-slate-400 bg-slate-50/50'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept=".xlsx, .xls"
+                    className="hidden"
+                  />
+                  
+                  {file ? (
+                    <>
+                      <FileSpreadsheet className="h-12 w-12 text-emerald-600 mb-3 animate-bounce" />
+                      <h4 className="text-sm font-bold text-slate-800 truncate max-w-xs">{file.name}</h4>
+                      <p className="text-xs text-slate-500 mt-1">{(file.size / 1024).toFixed(1)} KB</p>
+                      <button 
+                        type="button" 
+                        onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                        className="mt-3 text-xs text-red-500 font-semibold hover:underline cursor-pointer"
+                      >
+                        {t('import.remove')}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-12 w-12 text-slate-400 mb-3" />
+                      <h4 className="text-sm font-bold text-slate-800">{t('import.dragDrop')}</h4>
+                      <p className="text-xs text-slate-500 mt-1 max-w-xs leading-relaxed">
+                        {t('import.dragDropDesc')}
+                      </p>
+                      <span className="mt-4 px-3 py-1.5 bg-white border border-slate-300 rounded text-xs font-semibold text-slate-700 shadow-sm">
+                        {t('import.browse')}
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {errorText && (
+                  <div className="p-3.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium">
+                    {errorText}
+                  </div>
+                )}
+
+                {file && (
+                  <button
+                    type="button"
+                    onClick={handleUploadSubmit}
+                    disabled={importExcelMutation.isPending}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-white bg-teal-600 hover:bg-teal-700 font-semibold text-sm transition shadow-md disabled:opacity-50 cursor-pointer"
+                  >
+                    {importExcelMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {t('import.parsingLocal')}
+                      </>
+                    ) : (
+                      <>
+                        <Database className="h-4 w-4" />
+                        {t('import.ingestLocal')}
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
-
-              {errorText && (
-                <div className="p-3.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium">
-                  {errorText}
+            ) : (
+              /* --- STEP 1: CLOUD GOOGLE SHEETS TARGET (Cloud) --- */
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2 p-5 bg-teal-50/20 border border-teal-100 rounded-xl">
+                  <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <Database className="h-4 w-4 text-teal-600" />
+                    {t('import.tabCloud')}
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {t('import.cloudDesc')}
+                  </p>
                 </div>
-              )}
 
-              {file && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    URL Google Sheets / Excel Cloud
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t('import.cloudPlaceholder')}
+                    value={cloudUrl}
+                    onChange={(e) => setCloudUrl(e.target.value)}
+                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+                  />
+                </div>
+
+                {errorText && (
+                  <div className="p-3.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium">
+                    {errorText}
+                  </div>
+                )}
+
                 <button
                   type="button"
-                  onClick={handleUploadSubmit}
-                  disabled={importExcelMutation.isPending}
+                  onClick={handleCloudSubmit}
+                  disabled={isCloudImporting || !cloudUrl.trim()}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-white bg-teal-600 hover:bg-teal-700 font-semibold text-sm transition shadow-md disabled:opacity-50 cursor-pointer"
                 >
-                  {importExcelMutation.isPending ? (
+                  {isCloudImporting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Parsing excel workbook, resolving duplicates, generating report...
+                      {t('import.cloudFetch')}
                     </>
                   ) : (
                     <>
                       <Database className="h-4 w-4" />
-                      Ingest Roster Data
+                      {t('import.cloudBtn')}
                     </>
                   )}
                 </button>
-              )}
-            </div>
+              </div>
+            )
           ) : (
             /* --- STEP 2: SUMMARY REPORTING DASHBOARD --- */
             <div className="space-y-6">
@@ -223,13 +326,13 @@ export const ImportExcelDialog: React.FC<ImportExcelDialogProps> = ({ onClose })
                 <div>
                   <h4 className="text-sm font-bold">
                     {report.success 
-                      ? 'Roster Ingested Successfully' 
-                      : 'Roster Ingestion Failed'}
+                      ? t('import.successTitle') 
+                      : t('import.failureTitle')}
                   </h4>
                   <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                     {report.success 
-                      ? 'The worksheet dataset has been parsed and synchronized safely. View the summary analytics below.'
-                      : 'Critical errors occurred that prevented the ingestion engine from running safely.'}
+                      ? t('import.successDesc')
+                      : t('import.failureDesc')}
                   </p>
                 </div>
               </div>
@@ -237,24 +340,24 @@ export const ImportExcelDialog: React.FC<ImportExcelDialogProps> = ({ onClose })
               {/* Ingestion metrics cards */}
               <div>
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1">
-                  <BarChart3 className="h-3.5 w-3.5" /> Ingestion Analytics
+                  <BarChart3 className="h-3.5 w-3.5" /> {t('import.analytics')}
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl text-center">
                     <span className="block text-xl font-bold text-slate-800">{report.summary.employees_created}</span>
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">Employees Added</span>
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">{t('import.employeesAdded')}</span>
                   </div>
                   <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl text-center">
                     <span className="block text-xl font-bold text-slate-800">{report.summary.dependents_created}</span>
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">Dependents Added</span>
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">{t('import.dependentsAdded')}</span>
                   </div>
                   <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl text-center">
                     <span className="block text-xl font-bold text-slate-800">{report.summary.employees_updated}</span>
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">Duplicates Linked</span>
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">{t('import.duplicatesLinked')}</span>
                   </div>
                   <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl text-center">
                     <span className="block text-xl font-bold text-red-600">{report.summary.errors_count}</span>
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">Total Errors</span>
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">{t('import.totalErrors')}</span>
                   </div>
                 </div>
               </div>
@@ -263,7 +366,7 @@ export const ImportExcelDialog: React.FC<ImportExcelDialogProps> = ({ onClose })
               {report.logs.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-                    Ingestion Parsing logs ({report.logs.length})
+                    {t('import.parsingLogs')} ({report.logs.length})
                   </h4>
                   <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-48 overflow-y-auto text-xs">
                     {report.logs.map((log, idx) => (
@@ -289,10 +392,10 @@ export const ImportExcelDialog: React.FC<ImportExcelDialogProps> = ({ onClose })
           {report ? (
             <button
               type="button"
-              onClick={() => { setReport(null); setFile(null); }}
+              onClick={() => { setReport(null); setFile(null); setCloudUrl(''); }}
               className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 bg-white hover:bg-slate-50 font-semibold text-sm transition cursor-pointer"
             >
-              Ingest Another File
+              {t('import.ingestAnother')}
             </button>
           ) : null}
           
@@ -301,7 +404,7 @@ export const ImportExcelDialog: React.FC<ImportExcelDialogProps> = ({ onClose })
             onClick={onClose}
             className="px-5 py-2 rounded-lg text-white bg-teal-600 hover:bg-teal-700 font-semibold text-sm transition shadow-md cursor-pointer"
           >
-            Close
+            {t('import.close')}
           </button>
         </div>
       </div>

@@ -91,6 +91,25 @@ export const useDeleteDependent = (employeeId: string) => {
   });
 };
 
+export const useUpdateDependent = (employeeId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof api.updateDependent>[1] }) =>
+      api.updateDependent(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+};
+
+export const useDependents = (params?: { page?: number; search?: string }) => {
+  return useQuery({
+    queryKey: ['dependents', params],
+    queryFn: () => api.getDependents(params),
+  });
+};
+
 export const useImportExcel = () => {
   const queryClient = useQueryClient();
   return useMutation({

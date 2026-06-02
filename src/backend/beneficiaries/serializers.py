@@ -42,9 +42,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
         fields = [
             'id', 
             'employee_number', 
-            'last_name', 
-            'post_name', 
-            'first_name', 
+            'nom', 
+            'post_nom', 
+            'prenom', 
             'site', 
             'site_name',
             'region_id',
@@ -64,9 +64,9 @@ class EmployeeCreateUpdateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 
             'employee_number', 
-            'last_name', 
-            'post_name', 
-            'first_name', 
+            'nom', 
+            'post_nom', 
+            'prenom', 
             'site', 
             'address', 
             'employment_status'

@@ -80,6 +80,12 @@ def main():
             from umis_backend.wsgi import application
             server = make_server('127.0.0.1', local_port, application)
             server.serve_forever()
+    finally:
+        print("\n[!] Application is shutting down. Running automated pharmacy backup...")
+        try:
+            call_command('export_pharmacy_backup', interactive=False)
+        except Exception as e:
+            print(f"-> Failed to run automated pharmacy backup: {str(e)}")
 
 if __name__ == '__main__':
     main()

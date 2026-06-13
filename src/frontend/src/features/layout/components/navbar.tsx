@@ -26,7 +26,7 @@ export function Navbar() {
   }, [language]);
 
   return (
-    <header className="h-16 border-b border-slate-200 bg-white/85 backdrop-blur-md px-8 flex items-center justify-between shrink-0 z-10">
+    <header className="h-16 border-b border-slate-200 bg-white/85 backdrop-blur-md px-4 md:px-8 flex items-center justify-between shrink-0 z-10">
       {/* Toggle button & Date Display Container */}
       <div className="flex items-center gap-4">
         <button
@@ -38,8 +38,8 @@ export function Navbar() {
         </button>
 
         <div className="text-sm font-medium text-slate-600 flex items-center gap-2">
-          <span className="text-slate-400 font-normal">{t('header.datetime')}:</span>
-          <span className="font-semibold text-slate-800">{formattedDate || 'May 31, 2026'}</span>
+          <span className="hidden sm:inline text-slate-400 font-normal">{t('header.datetime')}:</span>
+          <span className="font-semibold text-slate-800 text-xs sm:text-sm">{formattedDate || 'May 31, 2026'}</span>
         </div>
       </div>
       
@@ -52,10 +52,10 @@ export function Navbar() {
         </div>
 
         {/* Database Connection sync status */}
-        <div className="flex items-center gap-2.5 text-sm bg-emerald-50 border border-emerald-100 px-4 py-1.5 rounded-full">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 text-sm bg-emerald-50 border border-emerald-100 px-3 sm:px-4 py-1.5 rounded-full">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <Database className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-          <span className="font-semibold text-emerald-700 text-xs tracking-wide">{t('header.database')}</span>
+          <span className="hidden sm:inline font-semibold text-emerald-700 text-xs tracking-wide">{t('header.database')}</span>
         </div>
       </div>
     </header>

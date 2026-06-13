@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useTranslation, Language } from '@/features/i18n/store/use-i18n-store';
 import { Stethoscope, Globe, Check, AlertCircle, Save } from 'lucide-react';
+import { PharmacySettingsCard } from '@/features/pharmacy/components/pharmacy-settings-card';
 
 export function SettingsPage() {
   const { language, setLanguage, t } = useTranslation();
@@ -123,6 +124,9 @@ export function SettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* Pharmacy Settings Card */}
+      <PharmacySettingsCard />
 
       {/* Aesthetic Micro Info Graphic */}
       <div className="bg-gradient-to-r from-teal-500/5 to-cyan-500/5 border border-border p-6 rounded-xl flex items-center gap-4">

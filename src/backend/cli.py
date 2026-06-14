@@ -67,7 +67,8 @@ def main():
     print(f"\n[4/4] Starting local medical web server on port {local_port}...")
     try:
         import uvicorn
-        uvicorn.run("umis_backend.asgi:application", host="127.0.0.1", port=local_port, log_level="info")
+        from umis_backend.asgi import application
+        uvicorn.run(application, host="127.0.0.1", port=local_port, log_level="info")
     except ImportError:
         # Fallback to standard waitress (extremely robust on Windows!) or wsgiref
         try:

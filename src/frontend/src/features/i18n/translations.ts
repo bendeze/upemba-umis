@@ -185,6 +185,7 @@ export const translations = {
     'common.id': 'Matricule',
     'common.status': 'Statut',
     'common.address': 'Adresse',
+    'common.optional': 'Optionnel',
     'common.save': 'Enregistrer les Modifications',
     'common.cancel': 'Annuler',
 
@@ -404,7 +405,27 @@ export const translations = {
     'pharmacy.generalMinStock': 'Niveau de Stock Minimum Général',
     'pharmacy.generalMinStockDesc': 'Des alertes se déclencheront si le stock d\'un médicament tombe en dessous de ce montant dans n\'importe quel centre, sauf si des paramètres spécifiques au médicament le remplacent.',
     'pharmacy.settingsSaved': 'Paramètres de la pharmacie enregistrés avec succès',
-    'pharmacy.saveConfigBtn': 'Enregistrer Config'
+    'pharmacy.saveConfigBtn': 'Enregistrer Config',
+
+    // Missing Pharmacy translations
+    'pharmacy.consError': "Erreur lors de l'enregistrement de la consommation.",
+    'pharmacy.consSuccess': "Consommation enregistrée avec succès.",
+    'pharmacy.excelConsDesc': "Téléversez un fichier Excel (.xlsx, .xls). Colonnes attendues : Medicine Name, Quantity.",
+    'pharmacy.excelDesc': "Téléversez un fichier Excel (.xlsx, .xls). Colonnes attendues : Medicine Name, Quantity, Expiration Date (Optionnel).",
+    'pharmacy.excelFormats': "XLSX ou XLS jusqu'à 10MB",
+    'pharmacy.importConsSuccess': "Importation réussie : {count} mouvements enregistrés.",
+    'pharmacy.importError': "Erreur lors de l'importation du fichier Excel.",
+    'pharmacy.importSuccess': "Fichier importé avec succès.",
+    'pharmacy.manualConsumption': "Consommation manuelle",
+    'pharmacy.manualRequisition': "Réquisition manuelle",
+    'pharmacy.orDragDrop': "ou glissez-déposez",
+    'pharmacy.recordExitBtn': "Enregistrer la Sortie",
+    'pharmacy.reqError': "Erreur lors de la réquisition.",
+    'pharmacy.reqSuccess': "Réquisition enregistrée avec succès.",
+    'pharmacy.step2Excel': "2. Importation Excel",
+    'pharmacy.step2Manual': "2. Saisie Manuelle",
+    'pharmacy.uploadAndImportBtn': "Téléverser et Importer",
+    'pharmacy.uploadFile': "Sélectionner un fichier"
   },
   en: {
     // Auth / Login screen
@@ -587,6 +608,7 @@ export const translations = {
     'common.id': 'Employee ID',
     'common.status': 'Status',
     'common.address': 'Address',
+    'common.optional': 'Optional',
     'common.save': 'Save Changes',
     'common.cancel': 'Cancel',
 
@@ -806,6 +828,26 @@ export const translations = {
     'pharmacy.generalMinStock': 'General Minimum Stock Level',
     'pharmacy.generalMinStockDesc': 'Alerts will trigger if stock for any medicine falls below this amount in any center, unless overridden by specific medicine settings.',
     'pharmacy.settingsSaved': 'Pharmacy Settings Saved successfully',
-    'pharmacy.saveConfigBtn': 'Save Config'
+    'pharmacy.saveConfigBtn': 'Save Config',
+
+    // Missing Pharmacy translations
+    'pharmacy.consError': "Error recording consumption.",
+    'pharmacy.consSuccess': "Consumption recorded successfully.",
+    'pharmacy.excelConsDesc': "Upload an Excel file (.xlsx, .xls). Expected columns: Medicine Name, Quantity.",
+    'pharmacy.excelDesc': "Upload an Excel file (.xlsx, .xls). Expected columns: Medicine Name, Quantity, Expiration Date (Optional).",
+    'pharmacy.excelFormats': "XLSX or XLS up to 10MB",
+    'pharmacy.importConsSuccess': "Import successful: {count} movements recorded.",
+    'pharmacy.importError': "Error importing Excel file.",
+    'pharmacy.importSuccess': "File imported successfully.",
+    'pharmacy.manualConsumption': "Manual consumption",
+    'pharmacy.manualRequisition': "Manual requisition",
+    'pharmacy.orDragDrop': "or drag and drop",
+    'pharmacy.recordExitBtn': "Record Exit",
+    'pharmacy.reqError': "Error during requisition.",
+    'pharmacy.reqSuccess': "Requisition recorded successfully.",
+    'pharmacy.step2Excel': "2. Excel Import",
+    'pharmacy.step2Manual': "2. Manual Entry",
+    'pharmacy.uploadAndImportBtn': "Upload and Import",
+    'pharmacy.uploadFile': "Choose a file"
   }
 };

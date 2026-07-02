@@ -23,7 +23,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from core.views import IndexView, RegisterView, MeView
+from core.views import IndexView, RegisterView, MeView, SignedURLGeneratorView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -34,7 +34,11 @@ urlpatterns = [
     path('api/token/register/', RegisterView.as_view(), name='token_register'),
     path('api/me/', MeView.as_view(), name='me'),
     
+    # Core Endpoints
+    path('api/v1/core/signed-url/', SignedURLGeneratorView.as_view(), name='signed_url_generate'),
+    
     # API Version 1 Endpoints
+    path('api/v1/', include('locations.urls')),
     path('api/v1/', include('beneficiaries.urls')),
     path('api/v1/pharmacy/', include('pharmacy.urls')),
     

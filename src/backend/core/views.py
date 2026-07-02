@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from core.utils.signature import generate_signed_url
 
 class IndexView(TemplateView):
     """
@@ -42,7 +44,6 @@ class RegisterView(APIView):
             'access': str(refresh.access_token),
         }, status=status.HTTP_201_CREATED)
 
-from rest_framework.permissions import IsAuthenticated
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -54,4 +55,34 @@ class MeView(APIView):
             'email': user.email,
             'is_superuser': user.is_superuser,
             'is_staff': user.is_staff
+        })
+
+class SignedURLGeneratorView(APIView):
+    """
+    API view to generate a signed URL for a specific path.
+    Requires authentication.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        path = request.data.get('path')
+        expires_in_minutes = request.data.get('expires_in_minutes', 60)
+        
+        if not path:
+            return Response({"detail": "The 'path' parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            expires_in_seconds = int(expires_in_minutes) * 60
+        except ValueError:
+            return Response({"detail": "Invalid expiration time."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        signed_url = generate_signed_url(path, expires_in_seconds)
+        
+        # Build absolute URI if request is provided, otherwise just return relative
+        absolute_url = request.build_absolute_uri(signed_url)
+        
+        return Response({
+            "signed_url": absolute_url,
+            "relative_url": signed_url,
+            "expires_in_seconds": expires_in_seconds
         })

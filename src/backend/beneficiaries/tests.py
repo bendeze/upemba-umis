@@ -5,7 +5,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db import IntegrityError
 from core.models.audit import AuditLog
-from beneficiaries.models import Region, Site, Employee, Dependent
+from beneficiaries.models import Employee, Dependent
+from locations.models import Region, Site
 from beneficiaries.services import EmployeeService, DependentService, ExcelImportService
 
 class BeneficiariesModelTests(TestCase):

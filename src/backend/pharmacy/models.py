@@ -2,16 +2,6 @@ import uuid
 from django.db import models
 from core.models import TimeStampedModel, SoftDeleteModel
 from django.utils import timezone
-class MedicalCenter(TimeStampedModel):
-    """Healthcare facility managed by the pharmacy module."""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255, unique=True)
-
-    class Meta:
-        ordering = ['name']
-
-    def __str__(self):
-        return self.name
 
 
 class GlobalSettings(TimeStampedModel):
@@ -27,10 +17,22 @@ class GlobalSettings(TimeStampedModel):
         obj, created = cls.objects.get_or_create(pk=1)
         return obj
 
+class MedicalCenter(TimeStampedModel):
+    """
+    Independent medical center for the pharmacy.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, unique=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
 class Medicine(TimeStampedModel, SoftDeleteModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True)
-    reference_number = models.CharField(max_length=100, null=True, blank=True)
     unit = models.CharField(max_length=50) # e.g., tablet, bottle, box
     min_stock_level = models.IntegerField(null=True, blank=True, help_text="Overrides general minimum stock level if set")
     
@@ -45,14 +47,15 @@ class MedicineBatch(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     medical_center = models.ForeignKey(MedicalCenter, on_delete=models.CASCADE, related_name='medicine_batches', null=True, blank=True)
     medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='batches')
+    lot_number = models.CharField(max_length=100, default='UNKNOWN')
     expiration_date = models.DateField(null=True, blank=True)
     quantity = models.IntegerField(default=0) # Current remaining in this batch
     
     class Meta:
-        unique_together = ('medical_center', 'medicine', 'expiration_date')
+        unique_together = ('medical_center', 'medicine', 'lot_number')
 
     def __str__(self):
-        return f"{self.medicine.name} at {self.medical_center.name} exp {self.expiration_date}: {self.quantity}"
+        return f"{self.medicine.name} - Lot {self.lot_number} at {self.medical_center.name if self.medical_center else 'No Site'} exp {self.expiration_date}: {self.quantity}"
 
 class PharmacyStock(TimeStampedModel):
     """Aggregated current stock for a medicine at a specific site."""
@@ -65,7 +68,7 @@ class PharmacyStock(TimeStampedModel):
         unique_together = ('medical_center', 'medicine')
 
     def __str__(self):
-        return f"{self.medicine.name} at {self.medical_center.name}: {self.quantity}"
+        return f"{self.medicine.name} at {self.medical_center.name if self.medical_center else 'No Site'}: {self.quantity}"
 
 class StockMovement(TimeStampedModel):
     MOVEMENT_TYPES = [
@@ -80,12 +83,13 @@ class StockMovement(TimeStampedModel):
     medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='movements')
     movement_type = models.CharField(max_length=14, choices=MOVEMENT_TYPES)
     quantity = models.IntegerField() # always positive, movement_type determines add/subtract
+    lot_number = models.CharField(max_length=100, null=True, blank=True)
     expiration_date = models.DateField(null=True, blank=True)
-    date = models.DateField(default=timezone.now)
+    date = models.DateField(default=timezone.localdate)
     notes = models.TextField(null=True, blank=True)
 
     class Meta:
         ordering = ['-date', '-created_at']
 
     def __str__(self):
-        return f"{self.movement_type} - {self.medicine.name} at {self.medical_center.name} ({self.quantity})"
+        return f"{self.movement_type} - {self.medicine.name} at {self.medical_center.name if self.medical_center else 'No Site'} ({self.quantity})"

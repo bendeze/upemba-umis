@@ -1,8 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from beneficiaries.views import (
-    RegionViewSet,
-    SiteViewSet,
     EmployeeViewSet,
     DependentViewSet,
     ExcelImportView,
@@ -12,8 +10,6 @@ from beneficiaries.views import (
 )
 
 router = DefaultRouter()
-router.register(r'regions', RegionViewSet, basename='region')
-router.register(r'sites', SiteViewSet, basename='site')
 router.register(r'employees', EmployeeViewSet, basename='employee')
 router.register(r'dependents', DependentViewSet, basename='dependent')
 

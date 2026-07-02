@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { pharmacyApi } from '../api/pharmacy-api';
 import { Medicine } from '../types';
-import { Edit2, Pill, Plus, Save, X } from 'lucide-react';
+import { Edit2, Pill, Plus, Save, X, Trash2 } from 'lucide-react';
 import { useTranslation } from '@/features/i18n/store/use-i18n-store';
 
 export function MedicinesDirectory() {
@@ -11,11 +11,13 @@ export function MedicinesDirectory() {
   
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newRef, setNewRef] = useState('');
   const [newUnit, setNewUnit] = useState('Unité');
   
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editMinStock, setEditMinStock] = useState<number>(0);
+  const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editUnit, setEditUnit] = useState('');
+  const [editMinStock, setEditMinStock] = useState<number | ''>('');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchMedicines();
@@ -39,12 +41,10 @@ export function MedicinesDirectory() {
     try {
       await pharmacyApi.createMedicine({
         name: newName,
-        reference_number: newRef || undefined,
         unit: newUnit
       });
       setIsAdding(false);
       setNewName('');
-      setNewRef('');
       setNewUnit('Unité');
       fetchMedicines();
     } catch (err) {
@@ -53,14 +53,40 @@ export function MedicinesDirectory() {
     }
   };
 
-  const handleSaveEdit = async (id: string) => {
+  const openEditMedicine = (med: Medicine) => {
+    setEditingMedicine(med);
+    setEditName(med.name);
+    setEditUnit(med.unit || '');
+    setEditMinStock(med.min_stock_level || 0);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMedicine) return;
     try {
-      await pharmacyApi.updateMedicine(id, { min_stock_level: editMinStock });
-      setEditingId(null);
+      await pharmacyApi.updateMedicine(editingMedicine.id, { 
+        name: editName,
+        unit: editUnit,
+        min_stock_level: editMinStock === '' ? 0 : editMinStock 
+      });
+      setIsEditDialogOpen(false);
+      setEditingMedicine(null);
       fetchMedicines();
     } catch (err) {
       console.error(err);
-      alert('Failed to update minimum stock level');
+      alert('Failed to update medicine');
+    }
+  };
+
+  const handleDeleteMedicine = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this medicine?')) return;
+    try {
+      await pharmacyApi.deleteMedicine(id);
+      fetchMedicines();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete medicine');
     }
   };
 
@@ -88,10 +114,6 @@ export function MedicinesDirectory() {
               <input type="text" required placeholder={t('pharmacy.medicineNamePlaceholder')} value={newName} onChange={e => setNewName(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">{t('pharmacy.referenceNumber')}</label>
-              <input type="text" value={newRef} onChange={e => setNewRef(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" />
-            </div>
-            <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">{t('pharmacy.unitLabel')}</label>
               <input type="text" required placeholder={t('pharmacy.unitPlaceholder')} value={newUnit} onChange={e => setNewUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" />
             </div>
@@ -108,46 +130,36 @@ export function MedicinesDirectory() {
           <thead className="bg-slate-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('pharmacy.medicineName')}</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('pharmacy.thRefNumber')}</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('pharmacy.thUnit')}</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('pharmacy.thMinStock')}</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">{t('common.actions') || 'Actions'}</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
             {medicines.map(med => (
               <tr key={med.id} className="hover:bg-slate-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{med.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{med.reference_number || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{med.unit}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {editingId === med.id ? (
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="number" 
-                        min="0"
-                        value={editMinStock} 
-                        onChange={(e) => setEditMinStock(parseInt(e.target.value) || 0)}
-                        className="w-20 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:border-teal-500"
-                      />
-                      <button onClick={() => handleSaveEdit(med.id)} className="p-1 text-teal-600 hover:bg-teal-50 rounded"><Save className="h-4 w-4" /></button>
-                      <button onClick={() => setEditingId(null)} className="p-1 text-slate-400 hover:bg-slate-50 rounded"><X className="h-4 w-4" /></button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-900">
-                        {med.min_stock_level !== null ? med.min_stock_level : <span className="text-slate-400 italic">{t('pharmacy.globalDefault')}</span>}
-                      </span>
-                      <button 
-                        onClick={() => {
-                          setEditingId(med.id);
-                          setEditMinStock(med.min_stock_level || 0);
-                        }}
-                        className="p-1 text-slate-400 hover:text-teal-600 transition"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
+                  <span className="text-sm font-medium text-slate-900">
+                    {med.min_stock_level !== null ? med.min_stock_level : <span className="text-slate-400 italic">{t('pharmacy.globalDefault')}</span>}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button 
+                    onClick={() => openEditMedicine(med)}
+                    className="p-1 text-slate-400 hover:text-blue-600 transition mx-1"
+                    title="Edit"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteMedicine(med.id)}
+                    className="p-1 text-slate-400 hover:text-red-600 transition mx-1"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </td>
               </tr>
             ))}
@@ -159,6 +171,40 @@ export function MedicinesDirectory() {
           </tbody>
         </table>
       </div>
+      {/* Edit Medicine Dialog */}
+      {isEditDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Pill className="h-5 w-5 text-teal-600" />
+                {t('common.edit') || 'Edit Medicine'}
+              </h2>
+              <button onClick={() => setIsEditDialogOpen(false)} className="text-slate-400 hover:text-slate-600 transition">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t('pharmacy.medicineName')} *</label>
+                <input type="text" required value={editName} onChange={e => setEditName(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t('pharmacy.unitLabel')}</label>
+                <input type="text" value={editUnit} onChange={e => setEditUnit(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t('pharmacy.thMinStock')}</label>
+                <input type="number" min="0" value={editMinStock} onChange={e => setEditMinStock(e.target.value === '' ? '' : parseInt(e.target.value) || 0)} className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
+              </div>
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                <button type="button" onClick={() => setIsEditDialogOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">{t('common.cancel')}</button>
+                <button type="submit" className="px-5 py-2 rounded-lg text-white bg-teal-600 hover:bg-teal-700 font-semibold text-sm shadow-sm">{t('common.save') || 'Save'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

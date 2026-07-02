@@ -16,6 +16,6 @@ router.register(r'medicine-batches', MedicineBatchViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('settings/', GlobalSettingsView.as_view(), name='pharmacy-settings'),
-    path('import-requisition/<uuid:site_id>/', ExcelRequisitionImportView.as_view(), name='pharmacy-import-requisition'),
-    path('import-consumption/<uuid:site_id>/', ExcelConsumptionImportView.as_view(), name='pharmacy-import-consumption'),
+    path('import-requisition/<uuid:medical_center_id>/', ExcelRequisitionImportView.as_view(), name='pharmacy-import-requisition'),
+    path('import-consumption/<uuid:medical_center_id>/', ExcelConsumptionImportView.as_view(), name='pharmacy-import-consumption'),
 ]

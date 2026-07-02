@@ -26,6 +26,14 @@ export const pharmacyApi = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   }) as Promise<MedicalCenter>,
+  updateMedicalCenter: (id: string, data: Partial<MedicalCenter>) => fetchWithAuth(`${API_BASE}/medical-centers/${id}/`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }) as Promise<MedicalCenter>,
+  deleteMedicalCenter: (id: string) => fetchWithAuth(`${API_BASE}/medical-centers/${id}/`, {
+    method: 'DELETE',
+  }),
 
   getMedicines: async () => {
     const res = await fetchWithAuth(`${API_BASE}/medicines/`);
@@ -41,6 +49,9 @@ export const pharmacyApi = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   }) as Promise<Medicine>,
+  deleteMedicine: (id: string) => fetchWithAuth(`${API_BASE}/medicines/${id}/`, {
+    method: 'DELETE',
+  }),
   
   getStock: async (medicalCenterId?: string) => {
     const url = medicalCenterId ? `${API_BASE}/pharmacy-stock/?medical_center=${medicalCenterId}` : `${API_BASE}/pharmacy-stock/`;
@@ -53,6 +64,14 @@ export const pharmacyApi = {
     const res = await fetchWithAuth(url);
     return (Array.isArray(res) ? res : (res.results || [])) as MedicineBatch[];
   },
+  updateMedicineBatch: (id: string, data: Partial<MedicineBatch>) => fetchWithAuth(`${API_BASE}/medicine-batches/${id}/`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }) as Promise<MedicineBatch>,
+  deleteMedicineBatch: (id: string) => fetchWithAuth(`${API_BASE}/medicine-batches/${id}/`, {
+    method: 'DELETE',
+  }),
 
   getMovements: async (medicalCenterId?: string) => {
     const url = medicalCenterId ? `${API_BASE}/stock-movements/?medical_center=${medicalCenterId}` : `${API_BASE}/stock-movements/`;
@@ -60,7 +79,7 @@ export const pharmacyApi = {
     return (Array.isArray(res) ? res : (res.results || [])) as StockMovement[];
   },
 
-  createMovement: (data: { medical_center_id: string; medicine_id: string; movement_type: string; quantity: number; expiration_date?: string; date?: string; notes?: string }) => {
+  createMovement: (data: { medical_center_id: string; medicine_id: string; movement_type: string; quantity: number; lot_number?: string; expiration_date?: string; date?: string; notes?: string }) => {
     return fetchWithAuth(`${API_BASE}/stock-movements/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -75,12 +94,12 @@ export const pharmacyApi = {
     body: JSON.stringify(data),
   }) as Promise<GlobalSettings>,
 
-  importRequisition: async (siteId: string, file: File) => {
+  importRequisition: async (medicalCenterId: string, file: File) => {
     const token = localStorage.getItem('umis_access_token');
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE}/import-requisition/${siteId}/`, {
+    const response = await fetch(`${API_BASE}/import-requisition/${medicalCenterId}/`, {
       method: 'POST',
       headers: {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -95,12 +114,12 @@ export const pharmacyApi = {
     return response.json();
   },
 
-  importConsumption: async (siteId: string, file: File) => {
+  importConsumption: async (medicalCenterId: string, file: File) => {
     const token = localStorage.getItem('umis_access_token');
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE}/import-consumption/${siteId}/`, {
+    const response = await fetch(`${API_BASE}/import-consumption/${medicalCenterId}/`, {
       method: 'POST',
       headers: {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})

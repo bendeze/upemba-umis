@@ -12,15 +12,15 @@ class MedicalCenterAdmin(admin.ModelAdmin):
 
 @admin.register(Medicine)
 class MedicineAdmin(admin.ModelAdmin):
-    list_display = ('name', 'reference_number', 'unit', 'min_stock_level')
-    search_fields = ('name', 'reference_number')
+    list_display = ('name', 'unit', 'min_stock_level')
+    search_fields = ('name',)
     list_filter = ('unit',)
 
 @admin.register(MedicineBatch)
 class MedicineBatchAdmin(admin.ModelAdmin):
-    list_display = ('medicine', 'medical_center', 'expiration_date', 'quantity')
+    list_display = ('medicine', 'medical_center', 'lot_number', 'expiration_date', 'quantity')
     list_filter = ('medical_center', 'expiration_date')
-    search_fields = ('medicine__name', 'medical_center__name')
+    search_fields = ('medicine__name', 'medical_center__name', 'lot_number')
 
 @admin.register(PharmacyStock)
 class PharmacyStockAdmin(admin.ModelAdmin):
@@ -30,7 +30,7 @@ class PharmacyStockAdmin(admin.ModelAdmin):
 
 @admin.register(StockMovement)
 class StockMovementAdmin(admin.ModelAdmin):
-    list_display = ('movement_type', 'medicine', 'medical_center', 'quantity', 'date')
+    list_display = ('movement_type', 'medicine', 'medical_center', 'lot_number', 'quantity', 'date')
     list_filter = ('movement_type', 'medical_center', 'date')
-    search_fields = ('medicine__name', 'medical_center__name')
+    search_fields = ('medicine__name', 'medical_center__name', 'lot_number')
     date_hierarchy = 'date'

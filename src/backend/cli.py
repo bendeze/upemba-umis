@@ -58,8 +58,19 @@ def main():
         def open_browser():
             time.sleep(1.5)
             webbrowser.open(url)
+            
+        def run_periodic_backup(interval_hours=24):
+            while True:
+                time.sleep(interval_hours * 3600)
+                try:
+                    call_command('export_pharmacy_backup', interactive=False)
+                    print("-> Periodic automated pharmacy backup completed successfully.")
+                except Exception as e:
+                    print(f"-> Failed to run automated pharmacy backup: {str(e)}")
         
         threading.Thread(target=open_browser, daemon=True).start()
+        threading.Thread(target=run_periodic_backup, args=(24,), daemon=True).start()
+        print("-> Background scheduled backup initialized (Interval: 24h).")
     except Exception as e:
         print(f"-> browser redirect notice: open {url} manually. ({str(e)})")
         

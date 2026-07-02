@@ -25,9 +25,9 @@ class Command(BaseCommand):
         headers_stock = ["Site", "Medicine Name", "Reference Number", "Quantity", "Unit"]
         ws_stock.append(headers_stock)
         
-        for stock in PharmacyStock.objects.select_related('site', 'medicine').all():
+        for stock in PharmacyStock.objects.select_related('medical_center', 'medicine').all():
             ws_stock.append([
-                stock.site.name,
+                stock.medical_center.name if stock.medical_center else '',
                 stock.medicine.name,
                 stock.medicine.reference_number or '',
                 stock.quantity,
@@ -39,10 +39,10 @@ class Command(BaseCommand):
         headers_move = ["Date", "Site", "Movement Type", "Medicine Name", "Quantity", "Expiration Date", "Notes"]
         ws_movements.append(headers_move)
         
-        for move in StockMovement.objects.select_related('site', 'medicine').all():
+        for move in StockMovement.objects.select_related('medical_center', 'medicine').all():
             ws_movements.append([
                 move.date.strftime("%Y-%m-%d"),
-                move.site.name,
+                move.medical_center.name if move.medical_center else '',
                 move.movement_type,
                 move.medicine.name,
                 move.quantity,
@@ -55,9 +55,9 @@ class Command(BaseCommand):
         headers_batches = ["Site", "Medicine Name", "Expiration Date", "Remaining Quantity"]
         ws_batches.append(headers_batches)
         
-        for batch in MedicineBatch.objects.select_related('site', 'medicine').filter(quantity__gt=0):
+        for batch in MedicineBatch.objects.select_related('medical_center', 'medicine').filter(quantity__gt=0):
             ws_batches.append([
-                batch.site.name,
+                batch.medical_center.name if batch.medical_center else '',
                 batch.medicine.name,
                 batch.expiration_date.strftime("%Y-%m-%d") if batch.expiration_date else '',
                 batch.quantity

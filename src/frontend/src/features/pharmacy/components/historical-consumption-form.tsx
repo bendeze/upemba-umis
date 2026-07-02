@@ -5,13 +5,14 @@ import { useTranslation } from '@/features/i18n/store/use-i18n-store';
 
 export function HistoricalConsumptionForm() {
   const { t } = useTranslation();
-  const [sites, setSites] = useState<any[]>([]);
+  const [medicalCenters, setMedicalCenters] = useState<any[]>([]);
   const [medicines, setMedicines] = useState<any[]>([]);
-  const [selectedSite, setSelectedSite] = useState('');
+  const [selectedMedicalCenter, setSelectedMedicalCenter] = useState('');
   
   // Manual Entry State
   const [selectedMedicine, setSelectedMedicine] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [lotNumber, setLotNumber] = useState('');
   const [consumptionDate, setConsumptionDate] = useState(new Date().toISOString().split('T')[0]);
   
   // File Upload State
@@ -26,7 +27,7 @@ export function HistoricalConsumptionForm() {
 
   const fetchSitesAndMedicines = async () => {
     try {
-      setSites(await pharmacyApi.getMedicalCenters());
+      setMedicalCenters(await pharmacyApi.getMedicalCenters());
     } catch (e) {
       console.error(e);
     }
@@ -39,22 +40,24 @@ export function HistoricalConsumptionForm() {
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSite || !selectedMedicine || !quantity) return;
+    if (!selectedMedicalCenter || !selectedMedicine || !quantity) return;
     
     setLoading(true);
     setMessage({ type: '', text: '' });
     
     try {
       await pharmacyApi.createMovement({
-        medical_center_id: selectedSite,
+        medical_center_id: selectedMedicalCenter,
         medicine_id: selectedMedicine,
         movement_type: 'HISTORICAL_OUT',
         quantity: parseInt(quantity, 10),
+        lot_number: lotNumber.trim() || undefined,
         date: consumptionDate,
         notes: t('pharmacy.manualConsumption')
       });
       setMessage({ type: 'success', text: t('pharmacy.historicalSuccess') });
       setQuantity('');
+      setLotNumber('');
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || t('pharmacy.consError') });
     } finally {
@@ -64,13 +67,13 @@ export function HistoricalConsumptionForm() {
 
   const handleFileUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSite || !file) return;
+    if (!selectedMedicalCenter || !file) return;
 
     setLoading(true);
     setMessage({ type: '', text: '' });
 
     try {
-      const res = await pharmacyApi.importConsumption(selectedSite, file);
+      const res = await pharmacyApi.importConsumption(selectedMedicalCenter, file);
       setMessage({ type: 'success', text: t('pharmacy.importConsSuccess').replace('{count}', String(res.movements_created)) });
       setFile(null);
     } catch (err: any) {
@@ -95,20 +98,20 @@ export function HistoricalConsumptionForm() {
         </h2>
         <select
           className="block w-full max-w-md pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm rounded-md"
-          value={selectedSite}
-          onChange={(e) => setSelectedSite(e.target.value)}
+          value={selectedMedicalCenter}
+          onChange={(e) => setSelectedMedicalCenter(e.target.value)}
           required
         >
           <option value="">{t('pharmacy.chooseCenter')}</option>
-          {sites.map(site => (
-            <option key={site.id} value={site.id}>{site.name}</option>
+          {medicalCenters.map(mc => (
+            <option key={mc.id} value={mc.id}>{mc.name}</option>
           ))}
         </select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Manual Entry */}
-        <div className={`bg-white p-6 rounded-lg shadow-sm border border-slate-200 ${!selectedSite && 'opacity-50 pointer-events-none'}`}>
+        <div className={`bg-white p-6 rounded-lg shadow-sm border border-slate-200 ${!selectedMedicalCenter && 'opacity-50 pointer-events-none'}`}>
           <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('pharmacy.step2Manual')}</h2>
           <form onSubmit={handleManualSubmit} className="space-y-4">
             <div>
@@ -139,6 +142,17 @@ export function HistoricalConsumptionForm() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-slate-700">{t('pharmacy.batchNumber') || 'Lot Number (Optional)'}</label>
+              <input
+                type="text"
+                className="mt-1 block w-full border border-slate-300 rounded-md py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                value={lotNumber}
+                onChange={(e) => setLotNumber(e.target.value)}
+                placeholder="e.g. LOT-1234"
+              />
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-slate-700">{t('pharmacy.dateOfConsumption')}</label>
               <input
                 type="date"
@@ -151,7 +165,7 @@ export function HistoricalConsumptionForm() {
 
             <button
               type="submit"
-              disabled={loading || !selectedSite}
+              disabled={loading || !selectedMedicalCenter}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-slate-400"
             >
               <Save className="h-4 w-4 mr-2" />
@@ -161,7 +175,7 @@ export function HistoricalConsumptionForm() {
         </div>
 
         {/* Excel Upload */}
-        <div className={`bg-white p-6 rounded-lg shadow-sm border border-slate-200 ${!selectedSite && 'opacity-50 pointer-events-none'}`}>
+        <div className={`bg-white p-6 rounded-lg shadow-sm border border-slate-200 ${!selectedMedicalCenter && 'opacity-50 pointer-events-none'}`}>
           <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <Upload className="h-5 w-5 text-red-600" />
             {t('pharmacy.step2Excel')}
@@ -186,7 +200,7 @@ export function HistoricalConsumptionForm() {
 
             <button
               type="submit"
-              disabled={loading || !selectedSite || !file}
+              disabled={loading || !selectedMedicalCenter || !file}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:bg-slate-400"
             >
               <Upload className="h-4 w-4 mr-2" />

@@ -1,22 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
-from beneficiaries.models import Region, Site, Employee, Dependent
+from beneficiaries.models import Employee, Dependent
 from core.models.audit import AuditLog
-
-class RegionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Region
-        fields = ['id', 'name', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-
-class SiteSerializer(serializers.ModelSerializer):
-    region_name = serializers.ReadOnlyField(source='region.name')
-
-    class Meta:
-        model = Site
-        fields = ['id', 'region', 'region_name', 'name', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class DependentSerializer(serializers.ModelSerializer):

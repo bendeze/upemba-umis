@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { pharmacyApi } from '../api/pharmacy-api';
+import { locationsApi } from '../../locations/api/locations-api';
 import { PharmacyStock, MedicineBatch, StockMovement, MedicalCenter } from '../types';
-import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, BarChart3, Building2, Clock, MapPin, Package, X, Loader2, Save, ArchiveRestore } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, BarChart3, Building2, Clock, MapPin, Package, X, Loader2, Save, ArchiveRestore, Edit2, Trash2 } from 'lucide-react';
 import { useTranslation } from '@/features/i18n/store/use-i18n-store';
 
 export function PharmacyOverview() {
@@ -9,13 +10,14 @@ export function PharmacyOverview() {
   const [stocks, setStocks] = useState<PharmacyStock[]>([]);
   const [batches, setBatches] = useState<MedicineBatch[]>([]);
   const [movements, setMovements] = useState<StockMovement[]>([]);
-  const [centers, setCenters] = useState<MedicalCenter[]>([]);
+  const [medicalCenters, setMedicalCenters] = useState<MedicalCenter[]>([]);
   const [loading, setLoading] = useState(true);
 
   // New Center Dialog State
-  const [isCenterDialogOpen, setIsCenterDialogOpen] = useState(false);
-  const [newCenterName, setNewCenterName] = useState('');
-  const [isCreatingCenter, setIsCreatingCenter] = useState(false);
+  const [isMedicalCenterDialogOpen, setIsMedicalCenterDialogOpen] = useState(false);
+  const [newMedicalCenterName, setNewMedicalCenterName] = useState('');
+  const [isCreatingMedicalCenter, setIsCreatingMedicalCenter] = useState(false);
+  const [editingMedicalCenter, setEditingMedicalCenter] = useState<MedicalCenter | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -33,7 +35,7 @@ export function PharmacyOverview() {
       setStocks(stockData);
       setBatches(batchData);
       setMovements(movementData);
-      setCenters(centersData);
+      setMedicalCenters(centersData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -41,21 +43,48 @@ export function PharmacyOverview() {
     }
   };
 
-  const handleCreateCenter = async (e: React.FormEvent) => {
+  const handleCreateMedicalCenter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCenterName.trim()) return;
-    setIsCreatingCenter(true);
+    if (!newMedicalCenterName.trim()) return;
+    setIsCreatingMedicalCenter(true);
     try {
-      const newCenter = await pharmacyApi.createMedicalCenter({ name: newCenterName.trim() });
-      setCenters([...centers, newCenter]);
-      setNewCenterName('');
-      setIsCenterDialogOpen(false);
-      // Optional: show a success message
+      if (editingMedicalCenter) {
+        const updated = await pharmacyApi.updateMedicalCenter(editingMedicalCenter.id, { name: newMedicalCenterName.trim() });
+        setMedicalCenters(medicalCenters.map(mc => mc.id === updated.id ? updated : mc));
+      } else {
+        const newSite = await pharmacyApi.createMedicalCenter({ name: newMedicalCenterName.trim() });
+        setMedicalCenters([...medicalCenters, newSite]);
+      }
+      setNewMedicalCenterName('');
+      setEditingMedicalCenter(null);
+      setIsMedicalCenterDialogOpen(false);
     } catch (err: any) {
-      alert(err.message || 'Failed to create medical center');
+      alert(err.message || 'Failed to save center');
     } finally {
-      setIsCreatingCenter(false);
+      setIsCreatingMedicalCenter(false);
     }
+  };
+
+  const handleDeleteCenter = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this medical center?')) return;
+    try {
+      await pharmacyApi.deleteMedicalCenter(id);
+      setMedicalCenters(medicalCenters.filter(mc => mc.id !== id));
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete center');
+    }
+  };
+
+  const openEditCenter = (center: MedicalCenter) => {
+    setEditingMedicalCenter(center);
+    setNewMedicalCenterName(center.name);
+    setIsMedicalCenterDialogOpen(true);
+  };
+
+  const openCreateCenter = () => {
+    setEditingMedicalCenter(null);
+    setNewMedicalCenterName('');
+    setIsMedicalCenterDialogOpen(true);
   };
 
   const lowStockCount = stocks.filter(s => s.quantity <= s.min_stock_level).length;
@@ -183,19 +212,29 @@ export function PharmacyOverview() {
               {t('pharmacy.centerManagementDesc')}
             </p>
             <button
-              onClick={() => setIsCenterDialogOpen(true)}
+              onClick={openCreateCenter}
               className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-teal-600 rounded-lg text-sm font-medium text-teal-600 hover:bg-teal-50 transition mb-6"
             >
               {t('pharmacy.recordNewCenter')}
             </button>
 
             <h4 className="text-sm font-semibold text-slate-700 mb-3 border-b pb-2">{t('pharmacy.existingCenters')}</h4>
-            {centers.length > 0 ? (
+            {medicalCenters.length > 0 ? (
               <ul className="space-y-2 max-h-48 overflow-y-auto">
-                {centers.map(center => (
-                  <li key={center.id} className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
-                    <Building2 className="h-4 w-4 text-slate-400" />
-                    {center.name}
+                {medicalCenters.map(mc => (
+                  <li key={mc.id} className="flex items-center justify-between text-sm text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-slate-400" />
+                      {mc.name}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => openEditCenter(mc)} className="p-1 text-slate-400 hover:text-blue-600 transition" title="Edit">
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => handleDeleteCenter(mc.id)} className="p-1 text-slate-400 hover:text-red-600 transition" title="Delete">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -206,20 +245,20 @@ export function PharmacyOverview() {
         </div>
       </div>
 
-      {/* New Center Dialog Modal */}
-      {isCenterDialogOpen && (
+      {/* New Site Dialog Modal */}
+      {isMedicalCenterDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-white rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-teal-600" />
-                {t('pharmacy.recordNewMedicalCenter')}
+                {editingMedicalCenter ? t('common.edit') || 'Edit Center' : t('pharmacy.recordNewMedicalCenter')}
               </h2>
-              <button onClick={() => setIsCenterDialogOpen(false)} className="text-slate-400 hover:text-slate-600 transition">
+              <button onClick={() => { setIsMedicalCenterDialogOpen(false); setEditingMedicalCenter(null); }} className="text-slate-400 hover:text-slate-600 transition">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleCreateCenter} className="p-6 space-y-4">
+            <form onSubmit={handleCreateMedicalCenter} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                   {t('pharmacy.centerNameLabel')}
@@ -228,25 +267,25 @@ export function PharmacyOverview() {
                   type="text"
                   required
                   placeholder={t('pharmacy.centerNamePlaceholder')}
-                  value={newCenterName}
-                  onChange={(e) => setNewCenterName(e.target.value)}
+                  value={newMedicalCenterName}
+                  onChange={(e) => setNewMedicalCenterName(e.target.value)}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
                 />
               </div>
               <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsCenterDialogOpen(false)}
+                  onClick={() => { setIsMedicalCenterDialogOpen(false); setEditingMedicalCenter(null); }}
                   className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition"
                 >
                   {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
-                  disabled={isCreatingCenter || !newCenterName.trim()}
+                  disabled={isCreatingMedicalCenter || !newMedicalCenterName.trim()}
                   className="flex items-center gap-2 px-5 py-2 rounded-lg text-white bg-teal-600 hover:bg-teal-700 font-semibold text-sm transition shadow-sm disabled:opacity-50"
                 >
-                  {isCreatingCenter ? (
+                  {isCreatingMedicalCenter ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> {t('regions.saving')}</>
                   ) : (
                     <><Save className="h-4 w-4" /> {t('pharmacy.saveCenter')}</>

@@ -12,15 +12,8 @@ from .serializers import (
     MedicineSerializer, StockMovementSerializer, PharmacyStockSerializer,
     GlobalSettingsSerializer, MedicineBatchSerializer, MedicalCenterSerializer
 )
-
-class MedicalCenterViewSet(viewsets.ModelViewSet):
-    queryset = MedicalCenter.objects.all()
-    serializer_class = MedicalCenterSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name']
-    ordering_fields = ['name']
-    pagination_class = None
+from .services import PharmacyExcelService
+from core.mixins import AutoInvalidateCacheMixin, invalidate_model_cache
 
 class GlobalSettingsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -38,7 +31,16 @@ class GlobalSettingsView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class MedicineViewSet(viewsets.ModelViewSet):
+class MedicalCenterViewSet(AutoInvalidateCacheMixin, viewsets.ModelViewSet):
+    queryset = MedicalCenter.objects.all()
+    serializer_class = MedicalCenterSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name']
+    ordering_fields = ['name']
+    pagination_class = None
+
+class MedicineViewSet(AutoInvalidateCacheMixin, viewsets.ModelViewSet):
     queryset = Medicine.objects.all()
     serializer_class = MedicineSerializer
     permission_classes = [IsAuthenticated]
@@ -47,7 +49,7 @@ class MedicineViewSet(viewsets.ModelViewSet):
     ordering_fields = ['name']
     pagination_class = None
 
-class StockMovementViewSet(viewsets.ModelViewSet):
+class StockMovementViewSet(AutoInvalidateCacheMixin, viewsets.ModelViewSet):
     queryset = StockMovement.objects.all()
     serializer_class = StockMovementSerializer
     permission_classes = [IsAuthenticated]
@@ -55,7 +57,22 @@ class StockMovementViewSet(viewsets.ModelViewSet):
     filterset_fields = ['medical_center', 'movement_type', 'medicine']
     ordering_fields = ['date', 'created_at']
 
-class PharmacyStockViewSet(viewsets.ReadOnlyModelViewSet):
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        invalidate_model_cache(PharmacyStock)
+        invalidate_model_cache(MedicineBatch)
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        invalidate_model_cache(PharmacyStock)
+        invalidate_model_cache(MedicineBatch)
+
+    def perform_destroy(self, instance):
+        super().perform_destroy(instance)
+        invalidate_model_cache(PharmacyStock)
+        invalidate_model_cache(MedicineBatch)
+
+class PharmacyStockViewSet(AutoInvalidateCacheMixin, viewsets.ReadOnlyModelViewSet):
     queryset = PharmacyStock.objects.all()
     serializer_class = PharmacyStockSerializer
     permission_classes = [IsAuthenticated]
@@ -64,7 +81,7 @@ class PharmacyStockViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ['quantity']
     pagination_class = None
 
-class MedicineBatchViewSet(viewsets.ReadOnlyModelViewSet):
+class MedicineBatchViewSet(AutoInvalidateCacheMixin, viewsets.ModelViewSet):
     queryset = MedicineBatch.objects.filter(quantity__gt=0)
     serializer_class = MedicineBatchSerializer
     permission_classes = [IsAuthenticated]
@@ -77,12 +94,12 @@ class ExcelRequisitionImportView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
 
-    def post(self, request, site_id, *args, **kwargs):
+    def post(self, request, medical_center_id, *args, **kwargs):
         if 'file' not in request.FILES:
             return Response({"detail": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            site = MedicalCenter.objects.get(id=site_id)
+            medical_center = MedicalCenter.objects.get(id=medical_center_id)
         except MedicalCenter.DoesNotExist:
             return Response({"detail": "Invalid medical center ID."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -91,80 +108,24 @@ class ExcelRequisitionImportView(APIView):
             return Response({"detail": "Invalid file format. Only .xlsx and .xls are supported."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            wb = openpyxl.load_workbook(file_obj, data_only=True)
-            ws = wb.active
-            
-            # Expected headers: Medicine Name, Reference Number, Unit, Quantity, Expiration Date (YYYY-MM-DD)
-            # Find column indices
-            header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True))
-            headers = [str(h).strip().lower() if h else '' for h in header_row]
-            
-            try:
-                name_idx = next(i for i, h in enumerate(headers) if 'name' in h or 'nom' in h)
-                qty_idx = next(i for i, h in enumerate(headers) if 'quantit' in h or 'qty' in h)
-            except StopIteration:
-                return Response({"detail": "Missing required columns: Medicine Name or Quantity."}, status=status.HTTP_400_BAD_REQUEST)
-                
-            ref_idx = next((i for i, h in enumerate(headers) if 'ref' in h), None)
-            unit_idx = next((i for i, h in enumerate(headers) if 'unit' in h), None)
-            exp_idx = next((i for i, h in enumerate(headers) if 'exp' in h or 'date' in h), None)
-
-            movements_created = 0
-            with transaction.atomic():
-                for row in ws.iter_rows(min_row=2, values_only=True):
-                    if not row[name_idx] or not row[qty_idx]:
-                        continue
-                        
-                    med_name = str(row[name_idx]).strip()
-                    try:
-                        quantity = int(row[qty_idx])
-                    except (ValueError, TypeError):
-                        continue # Skip invalid quantity
-                        
-                    if quantity <= 0:
-                        continue
-                        
-                    ref = str(row[ref_idx]).strip() if ref_idx is not None and row[ref_idx] else None
-                    unit = str(row[unit_idx]).strip() if unit_idx is not None and row[unit_idx] else 'Unité'
-                    exp_date = row[exp_idx] if exp_idx is not None else None
-                    if hasattr(exp_date, 'date'):
-                        exp_date = exp_date.date()
-
-                    # Get or Create Medicine
-                    medicine, created = Medicine.objects.get_or_create(
-                        name=med_name,
-                        defaults={
-                            'reference_number': ref,
-                            'unit': unit
-                        }
-                    )
-
-                    # Create Stock Movement (IN)
-                    StockMovement.objects.create(
-                        medical_center=site,
-                        medicine=medicine,
-                        movement_type='IN',
-                        quantity=quantity,
-                        expiration_date=exp_date,
-                        notes='Imported from Excel Requisition'
-                    )
-                    movements_created += 1
-
+            movements_created = PharmacyExcelService.import_requisitions(medical_center, file_obj)
+            if movements_created:
+                invalidate_model_cache(StockMovement)
+                invalidate_model_cache(PharmacyStock)
+                invalidate_model_cache(MedicineBatch)
             return Response({"success": True, "movements_created": movements_created}, status=status.HTTP_200_OK)
-
         except Exception as e:
             return Response({"detail": f"Error processing file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
 class ExcelConsumptionImportView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
 
-    def post(self, request, site_id, *args, **kwargs):
+    def post(self, request, medical_center_id, *args, **kwargs):
         if 'file' not in request.FILES:
             return Response({"detail": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            site = MedicalCenter.objects.get(id=site_id)
+            medical_center = MedicalCenter.objects.get(id=medical_center_id)
         except MedicalCenter.DoesNotExist:
             return Response({"detail": "Invalid medical center ID."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -173,52 +134,11 @@ class ExcelConsumptionImportView(APIView):
             return Response({"detail": "Invalid file format. Only .xlsx and .xls are supported."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            wb = openpyxl.load_workbook(file_obj, data_only=True)
-            ws = wb.active
-            
-            header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True))
-            headers = [str(h).strip().lower() if h else '' for h in header_row]
-            
-            try:
-                name_idx = next(i for i, h in enumerate(headers) if 'name' in h or 'nom' in h)
-                qty_idx = next(i for i, h in enumerate(headers) if 'quantit' in h or 'qty' in h)
-            except StopIteration:
-                return Response({"detail": "Missing required columns: Medicine Name or Quantity."}, status=status.HTTP_400_BAD_REQUEST)
-
-            movements_created = 0
-            with transaction.atomic():
-                for row in ws.iter_rows(min_row=2, values_only=True):
-                    if not row[name_idx] or not row[qty_idx]:
-                        continue
-                        
-                    med_name = str(row[name_idx]).strip()
-                    try:
-                        quantity = int(row[qty_idx])
-                    except (ValueError, TypeError):
-                        continue
-                        
-                    if quantity <= 0:
-                        continue
-
-                    # For OUT movement, we expect the medicine to exist
-                    try:
-                        medicine = Medicine.objects.get(name__iexact=med_name)
-                    except Medicine.DoesNotExist:
-                        continue # Skip if medicine not found
-
-                    # Create Stock Movement (OUT)
-                    StockMovement.objects.create(
-                        medical_center=site,
-                        medicine=medicine,
-                        movement_type='OUT',
-                        quantity=quantity,
-                        notes='Imported from Excel Consumption'
-                    )
-                    movements_created += 1
-
+            movements_created = PharmacyExcelService.import_consumptions(medical_center, file_obj)
+            if movements_created:
+                invalidate_model_cache(StockMovement)
+                invalidate_model_cache(PharmacyStock)
+                invalidate_model_cache(MedicineBatch)
             return Response({"success": True, "movements_created": movements_created}, status=status.HTTP_200_OK)
-
         except Exception as e:
             return Response({"detail": f"Error processing file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
-

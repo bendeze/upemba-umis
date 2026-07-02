@@ -1,30 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { pharmacyApi } from '../api/pharmacy-api';
-import { MedicineBatch } from '../types';
-import { Filter, Search, CalendarDays } from 'lucide-react';
+import { locationsApi } from '../../locations/api/locations-api';
+import { MedicineBatch, MedicalCenter } from '../types';
+import { Filter, Search, CalendarDays, AlertTriangle, Edit2, Trash2, Save, X, Package } from 'lucide-react';
 import { useTranslation } from '@/features/i18n/store/use-i18n-store';
 
 export function BatchesDirectory() {
   const { t } = useTranslation();
   const [batches, setBatches] = useState<MedicineBatch[]>([]);
-  const [sites, setSites] = useState<any[]>([]);
+  const [medicalCenters, setMedicalCenters] = useState<MedicalCenter[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSite, setSelectedSite] = useState<string>('');
+  const [selectedMedicalCenter, setSelectedMedicalCenter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [editingBatch, setEditingBatch] = useState<MedicineBatch | null>(null);
+  const [editLotNumber, setEditLotNumber] = useState('');
+  const [editExpirationDate, setEditExpirationDate] = useState('');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
-  }, [selectedSite]);
+  }, [selectedMedicalCenter]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      if (sites.length === 0) {
+      if (medicalCenters.length === 0) {
         const centersData = await pharmacyApi.getMedicalCenters();
-        setSites(centersData);
+        setMedicalCenters(centersData);
       }
 
-      const batchData = await pharmacyApi.getBatches(selectedSite || undefined);
+      const batchData = await pharmacyApi.getBatches(selectedMedicalCenter || undefined);
       setBatches(batchData);
     } catch (err) {
       console.error(err);
@@ -35,10 +41,54 @@ export function BatchesDirectory() {
 
   const filteredBatches = batches.filter(batch => 
     batch.medicine.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (batch.medicine.reference_number && batch.medicine.reference_number.toLowerCase().includes(searchQuery.toLowerCase()))
+    (batch.lot_number && batch.lot_number.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const openEditBatch = (batch: MedicineBatch) => {
+    setEditingBatch(batch);
+    setEditLotNumber(batch.lot_number || '');
+    setEditExpirationDate(batch.expiration_date || '');
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBatch) return;
+    try {
+      await pharmacyApi.updateMedicineBatch(editingBatch.id, { 
+        lot_number: editLotNumber,
+        expiration_date: editExpirationDate || undefined
+      });
+      setIsEditDialogOpen(false);
+      setEditingBatch(null);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update batch');
+    }
+  };
+
+  const handleDeleteBatch = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this batch? This should only be done if it was created by mistake.')) return;
+    try {
+      await pharmacyApi.deleteMedicineBatch(id);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete batch');
+    }
+  };
+
   const today = new Date();
+
+  const alertExpiringBatches = batches.filter(b => {
+    if (!b.expiration_date) return false;
+    const expDate = new Date(b.expiration_date);
+    if (b.quantity <= 0) return false;
+    const expiringThreshold = new Date();
+    expiringThreshold.setMonth(today.getMonth() + 6);
+    return expDate <= expiringThreshold;
+  });
 
   return (
     <div className="space-y-6">
@@ -46,6 +96,23 @@ export function BatchesDirectory() {
         <CalendarDays className="h-6 w-6 text-teal-600" />
         <h2 className="text-xl font-bold text-slate-800">{t('pharmacy.tabBatches')}</h2>
       </div>
+
+      {/* Alerts Section */}
+      {alertExpiringBatches.length > 0 && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-semibold text-amber-800">{t('pharmacy.actionRequired')}</h3>
+              <p className="mt-2 text-sm text-amber-700">
+                {t('pharmacy.alertExpiring').replace('{expiring}', String(alertExpiringBatches.length))} {t('pharmacy.alertCheckTable')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-lg shadow-sm border border-slate-200">
@@ -65,13 +132,13 @@ export function BatchesDirectory() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Filter className="h-4 w-4 text-slate-500" />
           <select
-            className="block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md"
-            value={selectedSite}
-            onChange={(e) => setSelectedSite(e.target.value)}
+            className="border-slate-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm p-2 w-full md:w-auto"
+            value={selectedMedicalCenter}
+            onChange={(e) => setSelectedMedicalCenter(e.target.value)}
           >
             <option value="">{t('pharmacy.allCenters')}</option>
-            {sites.map(site => (
-              <option key={site.id} value={site.id}>{site.name}</option>
+            {medicalCenters.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -88,9 +155,11 @@ export function BatchesDirectory() {
             <thead className="bg-slate-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('pharmacy.thMedicine')}</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('pharmacy.thLotNumber')}</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('pharmacy.center')}</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('pharmacy.thExpirationDate')}</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('pharmacy.thQty')}</th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{t('common.actions') || 'Actions'}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
@@ -99,11 +168,11 @@ export function BatchesDirectory() {
                 let expClass = 'text-slate-900';
                 
                 if (expDate) {
-                  const nextMonth = new Date();
-                  nextMonth.setMonth(today.getMonth() + 1);
+                  const expiringThreshold = new Date();
+                  expiringThreshold.setMonth(today.getMonth() + 6);
                   if (expDate < today) {
                     expClass = 'text-red-600 font-semibold';
-                  } else if (expDate <= nextMonth) {
+                  } else if (expDate <= expiringThreshold) {
                     expClass = 'text-amber-600 font-semibold';
                   }
                 }
@@ -114,6 +183,9 @@ export function BatchesDirectory() {
                       <div className="text-sm font-medium text-slate-900">
                         {batch.medicine.name} {batch.medicine.unit && `(${batch.medicine.unit})`}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">
+                      {batch.lot_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                       {batch.medical_center?.name}
@@ -126,6 +198,22 @@ export function BatchesDirectory() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">
                       {batch.quantity}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button 
+                        onClick={() => openEditBatch(batch)}
+                        className="p-1 text-slate-400 hover:text-blue-600 transition mx-1"
+                        title="Edit"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteBatch(batch.id)}
+                        className="p-1 text-slate-400 hover:text-red-600 transition mx-1"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -133,6 +221,36 @@ export function BatchesDirectory() {
           </table>
         )}
       </div>
+      {/* Edit Batch Dialog */}
+      {isEditDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Package className="h-5 w-5 text-teal-600" />
+                {t('common.edit') || 'Edit Batch'}
+              </h2>
+              <button onClick={() => setIsEditDialogOpen(false)} className="text-slate-400 hover:text-slate-600 transition">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Lot Number</label>
+                <input type="text" value={editLotNumber} onChange={e => setEditLotNumber(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t('pharmacy.expirationDate') || 'Expiration Date'}</label>
+                <input type="date" value={editExpirationDate} onChange={e => setEditExpirationDate(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
+              </div>
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                <button type="button" onClick={() => setIsEditDialogOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">{t('common.cancel')}</button>
+                <button type="submit" className="px-5 py-2 rounded-lg text-white bg-teal-600 hover:bg-teal-700 font-semibold text-sm shadow-sm">{t('common.save') || 'Save'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

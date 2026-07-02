@@ -5,7 +5,8 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
 from core.audit import log_action
-from beneficiaries.models import Region, Site, Employee, Dependent
+from beneficiaries.models import Employee, Dependent
+from locations.models import Region, Site
 
 class EmployeeService:
     @staticmethod
@@ -310,20 +311,31 @@ class ExcelImportService:
                             updated_fields["employee_number"] = [old_emp_no, n_val]
                         
                         if updated_fields:
-                            current_employee.save()
-                            log_action(
-                                user=user,
-                                action='UPDATE',
-                                instance=current_employee,
-                                changes=updated_fields
-                            )
-                            display_name = f"{nom_val} {post_prenom_val}".strip() if nom_val else f"{employee_nom} {post_prenom_val}".strip()
-                            report["logs"].append({
-                                "level": "INFO",
-                                "sheet": region_name,
-                                "row": r_idx,
-                                "message": f"Employee '{display_name}' already exists and was updated with new data: {', '.join(updated_fields.keys())}. Appending dependents."
-                            })
+                            try:
+                                with transaction.atomic():
+                                    current_employee.save()
+                                    log_action(
+                                        user=user,
+                                        action='UPDATE',
+                                        instance=current_employee,
+                                        changes=updated_fields
+                                    )
+                                display_name = f"{nom_val} {post_prenom_val}".strip() if nom_val else f"{employee_nom} {post_prenom_val}".strip()
+                                report["logs"].append({
+                                    "level": "INFO",
+                                    "sheet": region_name,
+                                    "row": r_idx,
+                                    "message": f"Employee '{display_name}' already exists and was updated with new data: {', '.join(updated_fields.keys())}. Appending dependents."
+                                })
+                            except Exception as e:
+                                report["summary"]["errors_count"] += 1
+                                display_name = f"{nom_val} {post_prenom_val}".strip() if nom_val else f"{employee_nom} {post_prenom_val}".strip()
+                                report["logs"].append({
+                                    "level": "ERROR",
+                                    "sheet": region_name,
+                                    "row": r_idx,
+                                    "message": f"Failed to update employee '{display_name}': {str(e)}"
+                                })
                         else:
                             display_name = f"{nom_val} {post_prenom_val}".strip() if nom_val else f"{employee_nom} {post_prenom_val}".strip()
                             report["logs"].append({
@@ -339,28 +351,29 @@ class ExcelImportService:
                         emp_sequence += 1
                         
                         try:
-                            current_employee = Employee.objects.create(
-                                employee_number=employee_number,
-                                nom=employee_nom,
-                                post_nom=post_nom if post_nom else None,
-                                prenom=prenom,
-                                site=site,
-                                address=adresse_val
-                            )
-                            sheet_info["employees_created"] += 1
-                            report["summary"]["employees_created"] += 1
-                            
-                            # Log audit actions
-                            log_action(
-                                user=user,
-                                action='CREATE',
-                                instance=current_employee,
-                                changes={
-                                    "employee_number": [None, current_employee.employee_number],
-                                    "name": [None, f"{current_employee.nom} {current_employee.prenom}"],
-                                    "site": [None, site.name]
-                                }
-                            )
+                            with transaction.atomic():
+                                current_employee = Employee.objects.create(
+                                    employee_number=employee_number,
+                                    nom=employee_nom,
+                                    post_nom=post_nom if post_nom else None,
+                                    prenom=prenom,
+                                    site=site,
+                                    address=adresse_val
+                                )
+                                sheet_info["employees_created"] += 1
+                                report["summary"]["employees_created"] += 1
+                                
+                                # Log audit actions
+                                log_action(
+                                    user=user,
+                                    action='CREATE',
+                                    instance=current_employee,
+                                    changes={
+                                        "employee_number": [None, current_employee.employee_number],
+                                        "name": [None, f"{current_employee.nom} {current_employee.prenom}"],
+                                        "site": [None, site.name]
+                                    }
+                                )
                         except Exception as e:
                             report["summary"]["errors_count"] += 1
                             display_name = nom_val if nom_val else employee_nom
@@ -384,21 +397,22 @@ class ExcelImportService:
                         # Add Spouse dependent
                         if not Dependent.objects.filter(employee=current_employee, full_name=spouse_name, relationship='SPOUSE').exists():
                             try:
-                                dep = Dependent.objects.create(
-                                    employee=current_employee,
-                                    full_name=spouse_name,
-                                    gender='F',  # Default gender for wives, can be corrected manually
-                                    relationship='SPOUSE'
-                                )
-                                sheet_info["dependents_created"] += 1
-                                report["summary"]["dependents_created"] += 1
-                                
-                                log_action(
-                                    user=user,
-                                    action='CREATE',
-                                    instance=dep,
-                                    changes={"employee": [None, current_employee.employee_number], "full_name": [None, spouse_name], "relationship": [None, "SPOUSE"]}
-                                )
+                                with transaction.atomic():
+                                    dep = Dependent.objects.create(
+                                        employee=current_employee,
+                                        full_name=spouse_name,
+                                        gender='F',  # Default gender for wives, can be corrected manually
+                                        relationship='SPOUSE'
+                                    )
+                                    sheet_info["dependents_created"] += 1
+                                    report["summary"]["dependents_created"] += 1
+                                    
+                                    log_action(
+                                        user=user,
+                                        action='CREATE',
+                                        instance=dep,
+                                        changes={"employee": [None, current_employee.employee_number], "full_name": [None, spouse_name], "relationship": [None, "SPOUSE"]}
+                                    )
                             except Exception as e:
                                 report["summary"]["errors_count"] += 1
                                 report["logs"].append({
@@ -466,13 +480,14 @@ class ExcelImportService:
                             
                         if updated_child_fields:
                             try:
-                                existing_child.save()
-                                log_action(
-                                    user=user,
-                                    action='UPDATE',
-                                    instance=existing_child,
-                                    changes=updated_child_fields
-                                )
+                                with transaction.atomic():
+                                    existing_child.save()
+                                    log_action(
+                                        user=user,
+                                        action='UPDATE',
+                                        instance=existing_child,
+                                        changes=updated_child_fields
+                                    )
                                 report["logs"].append({
                                     "level": "INFO",
                                     "sheet": region_name,
@@ -489,22 +504,23 @@ class ExcelImportService:
                                 })
                     else:
                         try:
-                            dep = Dependent.objects.create(
-                                employee=current_employee,
-                                full_name=enfant_val,
-                                gender=gender_mapped,
-                                relationship='CHILD',
-                                birth_date=birth_date
-                            )
-                            sheet_info["dependents_created"] += 1
-                            report["summary"]["dependents_created"] += 1
-                            
-                            log_action(
-                                user=user,
-                                action='CREATE',
-                                instance=dep,
-                                changes={"employee": [None, current_employee.employee_number], "full_name": [None, enfant_val], "relationship": [None, "CHILD"]}
-                            )
+                            with transaction.atomic():
+                                dep = Dependent.objects.create(
+                                    employee=current_employee,
+                                    full_name=enfant_val,
+                                    gender=gender_mapped,
+                                    relationship='CHILD',
+                                    birth_date=birth_date
+                                )
+                                sheet_info["dependents_created"] += 1
+                                report["summary"]["dependents_created"] += 1
+                                
+                                log_action(
+                                    user=user,
+                                    action='CREATE',
+                                    instance=dep,
+                                    changes={"employee": [None, current_employee.employee_number], "full_name": [None, enfant_val], "relationship": [None, "CHILD"]}
+                                )
                         except Exception as e:
                             report["summary"]["errors_count"] += 1
                             report["logs"].append({
@@ -521,3 +537,146 @@ class ExcelImportService:
             report["success"] = False
 
         return report
+
+class CloudImportService:
+    @staticmethod
+    def download_and_convert_url(url):
+        """
+        Downloads a file from a URL, handling Google Sheets conversion if necessary.
+        Returns a BytesIO object with the file content.
+        Raises ValueError if the URL or file content is invalid.
+        """
+        import io
+        import requests
+        
+        # Google Sheets auto-conversion logic
+        original_url = url.strip()
+        cleaned_url = original_url
+        if 'docs.google.com/spreadsheets' in cleaned_url:
+            if '/edit' in cleaned_url:
+                cleaned_url = cleaned_url.split('/edit')[0] + '/export?format=xlsx'
+            elif not cleaned_url.endswith('/export?format=xlsx'):
+                if cleaned_url.endswith('/'):
+                    cleaned_url = cleaned_url + 'export?format=xlsx'
+                else:
+                    cleaned_url = cleaned_url + '/export?format=xlsx'
+
+        try:
+            # Fetch remote Excel file
+            response = requests.get(cleaned_url, timeout=30)
+            if response.status_code != 200:
+                raise ValueError(f"Failed to download file from URL (HTTP {response.status_code}).")
+            
+            # Wrap content in BytesIO for openpyxl compatibility
+            file_obj = io.BytesIO(response.content)
+            
+            # Simple XLSX validation check
+            content_start = response.content[:4]
+            if content_start != b'PK\x03\x04' and not cleaned_url.lower().endswith(('.xlsx', '.xls')):
+                raise ValueError("Invalid file content. The cloud URL must point to a valid Excel workbook (.xlsx or .xls).")
+
+            return file_obj
+        except requests.exceptions.RequestException as e:
+            raise ValueError(f"Network error fetching cloud URL: {str(e)}")
+
+
+class EmployeeExportService:
+    @staticmethod
+    def export_to_excel(queryset):
+        """
+        Builds and returns an openpyxl Workbook from the given Employee queryset.
+        """
+        from openpyxl.styles import Font, PatternFill, Alignment, Side, Border
+        import openpyxl
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "UMIS_Roster"
+        
+        # Medical Teal-600 Harmonious Styles
+        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="0D9488", end_color="0D9488", fill_type="solid") # Teal-600
+        center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        
+        thin_side = Side(border_style="thin", color="E2E8F0") # Slate-200
+        border_all = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
+        
+        headers = [
+            "Matricule (Employee ID)", 
+            "Nom (Last Name)", 
+            "Post-nom & Prénom", 
+            "Épouse (Spouse)", 
+            "Nom de l'enfant (Child)", 
+            "Sexe (Gender)", 
+            "Année de naissance", 
+            "Adresse (Address)", 
+            "Site", 
+            "Région", 
+            "Statut (Status)"
+        ]
+        
+        # Set Row 1 Header style
+        ws.row_dimensions[1].height = 28
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_num)
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = center_align
+            cell.border = border_all
+            
+        # Write dataset
+        row_num = 2
+        for emp in queryset:
+            spouses = [d for d in emp.dependents.all() if d.relationship == 'SPOUSE']
+            children = [d for d in emp.dependents.all() if d.relationship == 'CHILD']
+            
+            max_rows = max(1, len(spouses), len(children))
+            
+            for i in range(max_rows):
+                ws.row_dimensions[row_num].height = 20
+                
+                # Write parent info on all rows
+                ws.cell(row=row_num, column=1, value=emp.employee_number)
+                if i == 0:
+                    ws.cell(row=row_num, column=2, value=emp.nom)
+                    post_name_str = f" {emp.post_nom}" if emp.post_nom else ""
+                    ws.cell(row=row_num, column=3, value=f"{post_name_str.strip()} {emp.prenom}".strip())
+                    ws.cell(row=row_num, column=8, value=emp.address)
+                    ws.cell(row=row_num, column=9, value=emp.site.name if emp.site else "Non assigné")
+                    ws.cell(row=row_num, column=10, value=emp.site.region.name if emp.site and emp.site.region else "Sans région")
+                    ws.cell(row=row_num, column=11, value=emp.employment_status)
+                
+                # Write Spouse (if any)
+                if i < len(spouses):
+                    ws.cell(row=row_num, column=4, value=spouses[i].full_name)
+                    
+                # Write Child (if any)
+                if i < len(children):
+                    ws.cell(row=row_num, column=5, value=children[i].full_name)
+                    ws.cell(row=row_num, column=6, value=children[i].gender)
+                    if children[i].birth_date:
+                        ws.cell(row=row_num, column=7, value=children[i].birth_date.year)
+                
+                # Apply alignments & borders
+                for col_num in range(1, 12):
+                    cell = ws.cell(row=row_num, column=col_num)
+                    cell.border = border_all
+                    if col_num in [1, 6, 7, 11]:
+                        cell.alignment = center_align
+                    else:
+                        cell.alignment = left_align
+                        
+                row_num += 1
+                
+        # Auto-fit column widths
+        for col in ws.columns:
+            max_len = 0
+            for cell in col:
+                if cell.value:
+                    max_len = max(max_len, len(str(cell.value)))
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+            
+        return wb

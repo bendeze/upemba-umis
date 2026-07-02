@@ -48,7 +48,7 @@ export function Navbar() {
         {/* Secure Workstation Status */}
         <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full">
           <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-          <span>AES-256 Secured</span>
+          <span>{t('header.aesSecured')}</span>
         </div>
 
         {/* Database Connection sync status */}

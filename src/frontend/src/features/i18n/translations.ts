@@ -32,6 +32,8 @@ export const translations = {
     'sidebar.title': 'Plateforme UMIS',
     'sidebar.subtitle': 'Dépt Médical',
     'sidebar.beneficiaries': 'Bénéficiaires',
+    'sidebar.dependents': 'Ayants Droits',
+    'sidebar.regions': 'Régions & Sites',
     'sidebar.consultations': 'Consultations',
     'sidebar.pharmacy': 'Pharmacie',
     'sidebar.laboratory': 'Laboratoire',
@@ -43,6 +45,7 @@ export const translations = {
     // Header
     'header.datetime': 'Date/Heure actuelle',
     'header.database': 'Base de données en ligne',
+    'header.aesSecured': 'Sécurisé AES-256',
     
     // Dashboard Cards
     'dashboard.totalAgents': 'Total Agents',
@@ -197,6 +200,39 @@ export const translations = {
     'employee.drawer.deleteModalConfirm': 'Êtes-vous sûr de vouloir supprimer définitivement',
     'employee.drawer.deleteModalConfirmBtn': 'Confirmer la Suppression',
     'employee.drawer.deleteModalRemovingBtn': 'Suppression...',
+    
+    // Dependent Dialog
+    'dependentDialog.addTitle': 'Ajouter un Ayant Droit',
+    'dependentDialog.editTitle': 'Modifier l\'Ayant Droit',
+    'dependentDialog.addSubtitle': 'Lier un ayant droit à',
+    'dependentDialog.editSubtitle': 'Mise à jour des infos pour',
+    'dependentDialog.fullName': 'Nom Complet *',
+    'dependentDialog.fullNamePlaceholder': 'ex: Marie Masengo',
+    'dependentDialog.relationship': 'Relation *',
+    'dependentDialog.gender': 'Genre *',
+    'dependentDialog.birthDate': 'Date de Naissance',
+    'dependentDialog.saving': 'Enregistrement...',
+    'dependentDialog.adding': 'Ajout...',
+    'dependentDialog.addBtn': 'Ajouter l\'Ayant Droit',
+
+    // Employee Form
+    'employeeForm.addTitle': 'Enregistrer un Nouvel Employé',
+    'employeeForm.editTitle': 'Modifier le Profil de l\'Employé',
+    'employeeForm.empNumber': 'Matricule *',
+    'employeeForm.empNumberPlaceholder': 'ex: EMP-2026-0045',
+    'employeeForm.lastName': 'Nom *',
+    'employeeForm.lastNamePlaceholder': 'ex: ILUNGA',
+    'employeeForm.postName': 'Post-nom',
+    'employeeForm.postNamePlaceholder': 'ex: KABANGE',
+    'employeeForm.firstName': 'Prénom *',
+    'employeeForm.firstNamePlaceholder': 'ex: Jean',
+    'employeeForm.region': 'Région *',
+    'employeeForm.selectRegion': 'Sélectionner la Région',
+    'employeeForm.site': 'Site Sanitaire *',
+    'employeeForm.selectSite': 'Sélectionner le Site',
+    'employeeForm.address': 'Adresse de Résidence',
+    'employeeForm.addressPlaceholder': 'ex: Station Lusinga, Zone 4, Maison 12',
+    'employeeForm.saving': 'Enregistrement...',
 
     // Import Excel Tabbed & Export
     'table.exportBtn': 'Exporter Roster',
@@ -399,6 +435,8 @@ export const translations = {
     'sidebar.title': 'UMIS Platform',
     'sidebar.subtitle': 'Medical Dept',
     'sidebar.beneficiaries': 'Beneficiaries',
+    'sidebar.dependents': 'Dependents',
+    'sidebar.regions': 'Regions & Sites',
     'sidebar.consultations': 'Consultations',
     'sidebar.pharmacy': 'Pharmacy',
     'sidebar.laboratory': 'Laboratory',
@@ -410,6 +448,7 @@ export const translations = {
     // Header
     'header.datetime': 'Current Date/Time',
     'header.database': 'Central Database Online',
+    'header.aesSecured': 'AES-256 Secured',
     
     // Dashboard Cards
     'dashboard.totalAgents': 'Total Agents',
@@ -563,6 +602,39 @@ export const translations = {
     'employee.drawer.deleteModalConfirm': 'Are you sure you want to permanently remove',
     'employee.drawer.deleteModalConfirmBtn': 'Confirm Remove',
     'employee.drawer.deleteModalRemovingBtn': 'Removing...',
+    
+    // Dependent Dialog
+    'dependentDialog.addTitle': 'Add Ayant Droit',
+    'dependentDialog.editTitle': 'Modify Ayant Droit',
+    'dependentDialog.addSubtitle': 'Linking dependent to',
+    'dependentDialog.editSubtitle': 'Updating dependent info for',
+    'dependentDialog.fullName': 'Full Name *',
+    'dependentDialog.fullNamePlaceholder': 'e.g. Marie Masengo',
+    'dependentDialog.relationship': 'Relationship *',
+    'dependentDialog.gender': 'Gender *',
+    'dependentDialog.birthDate': 'Birth Date',
+    'dependentDialog.saving': 'Saving...',
+    'dependentDialog.adding': 'Adding...',
+    'dependentDialog.addBtn': 'Add Dependent',
+
+    // Employee Form
+    'employeeForm.addTitle': 'Register New Employee',
+    'employeeForm.editTitle': 'Modify Employee Profile',
+    'employeeForm.empNumber': 'Employee Number *',
+    'employeeForm.empNumberPlaceholder': 'e.g. EMP-2026-0045',
+    'employeeForm.lastName': 'Last Name *',
+    'employeeForm.lastNamePlaceholder': 'e.g. ILUNGA',
+    'employeeForm.postName': 'Post-Name',
+    'employeeForm.postNamePlaceholder': 'e.g. KABANGE',
+    'employeeForm.firstName': 'First Name *',
+    'employeeForm.firstNamePlaceholder': 'e.g. Jean',
+    'employeeForm.region': 'Region *',
+    'employeeForm.selectRegion': 'Select Region',
+    'employeeForm.site': 'Healthcare Site *',
+    'employeeForm.selectSite': 'Select Site',
+    'employeeForm.address': 'Residential Address',
+    'employeeForm.addressPlaceholder': 'e.g. Lusinga Station, Area 4, House 12',
+    'employeeForm.saving': 'Saving...',
 
     // Import Excel Tabbed & Export
     'table.exportBtn': 'Export Roster',

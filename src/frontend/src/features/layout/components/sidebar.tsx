@@ -116,7 +116,7 @@ export function Sidebar({ onLogout, username = 'Admin', role = 'Superuser' }: Si
               }`}
             >
               <UserCheck className="h-4 w-4" />
-              Ayants Droits
+              {t('sidebar.dependents')}
             </button>
 
             {/* Regions & Sites (Active, Toggle tab) */}
@@ -129,7 +129,7 @@ export function Sidebar({ onLogout, username = 'Admin', role = 'Superuser' }: Si
               }`}
             >
               <Building2 className="h-4 w-4" />
-              Régions & Sites
+              {t('sidebar.regions')}
             </button>
 
             {/* Settings (Active, Toggle tab) */}

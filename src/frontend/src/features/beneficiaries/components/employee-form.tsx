@@ -104,7 +104,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
           <h3 className="text-base font-bold text-slate-800">
-            {isEditMode ? 'Modify Employee Profile' : 'Register New Employee'}
+            {isEditMode ? t('employeeForm.editTitle') : t('employeeForm.addTitle')}
           </h3>
           <button 
             onClick={onClose}
@@ -120,11 +120,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
           {/* Employee Number */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-              Employee Number *
+              {t('employeeForm.empNumber')}
             </label>
             <input
               type="text"
-              placeholder="e.g. EMP-2026-0045"
+              placeholder={t('employeeForm.empNumberPlaceholder')}
               {...register('employee_number')}
               className={`w-full px-3.5 py-2 border rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition ${
                 errors.employee_number ? 'border-red-400 focus:ring-red-400' : 'border-slate-300'
@@ -140,11 +140,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
             {/* Last Name */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                Last Name (Nom) *
+                {t('employeeForm.lastName')}
               </label>
               <input
                 type="text"
-                placeholder="e.g. ILUNGA"
+                placeholder={t('employeeForm.lastNamePlaceholder')}
                 {...register('last_name')}
                 className={`w-full px-3.5 py-2 border rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition uppercase ${
                   errors.last_name ? 'border-red-400 focus:ring-red-400' : 'border-slate-300'
@@ -158,11 +158,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
             {/* Post Name */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                Post-Name (Post-nom)
+                {t('employeeForm.postName')}
               </label>
               <input
                 type="text"
-                placeholder="e.g. KABANGE"
+                placeholder={t('employeeForm.postNamePlaceholder')}
                 {...register('post_name')}
                 className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
               />
@@ -172,11 +172,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
           {/* First Name */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-              First Name (Prénom) *
+              {t('employeeForm.firstName')}
             </label>
             <input
               type="text"
-              placeholder="e.g. Jean"
+              placeholder={t('employeeForm.firstNamePlaceholder')}
               {...register('first_name')}
               className={`w-full px-3.5 py-2 border rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition ${
                 errors.first_name ? 'border-red-400 focus:ring-red-400' : 'border-slate-300'
@@ -192,14 +192,14 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
             {/* Region select */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                Region *
+                {t('employeeForm.region')}
               </label>
               <select
                 value={selectedRegionId}
                 onChange={handleRegionChange}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition appearance-none cursor-pointer"
               >
-                <option value="">Select Region</option>
+                <option value="">{t('employeeForm.selectRegion')}</option>
                 {regions?.map((r) => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
@@ -209,7 +209,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
             {/* Site select */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                Healthcare Site *
+                {t('employeeForm.site')}
               </label>
               <select
                 disabled={!selectedRegionId || isLoadingSites}
@@ -218,7 +218,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
                   errors.site ? 'border-red-400 focus:ring-red-400' : 'border-slate-300'
                 }`}
               >
-                <option value="">Select Site</option>
+                <option value="">{t('employeeForm.selectSite')}</option>
                 {sites?.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
@@ -248,10 +248,10 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
           {/* Address */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-              Residential Address
+              {t('employeeForm.address')}
             </label>
             <textarea
-              placeholder="e.g. Lusinga Station, Area 4, House 12"
+              placeholder={t('employeeForm.addressPlaceholder')}
               rows={2}
               {...register('address')}
               className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
@@ -267,7 +267,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
             onClick={onClose}
             className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 bg-white hover:bg-slate-50 font-semibold text-sm transition cursor-pointer"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           
           <button
@@ -279,12 +279,12 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose })
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Saving...
+                {t('employeeForm.saving')}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                Save Changes
+                {t('common.save')}
               </>
             )}
           </button>

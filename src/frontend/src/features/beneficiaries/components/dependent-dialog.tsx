@@ -7,6 +7,7 @@ import { dependentFormSchema, DependentFormValues } from '../validation';
 import { useAddDependent, useUpdateDependent } from '../hooks/use-beneficiaries';
 import { Dependent } from '../types';
 import { X, Loader2, Save } from 'lucide-react';
+import { useTranslation } from '@/features/i18n/store/use-i18n-store';
 
 interface DependentDialogProps {
   employeeId: string;
@@ -24,6 +25,7 @@ export const DependentDialog: React.FC<DependentDialogProps> = ({
   const isEditMode = !!dependent;
   const addDependentMutation = useAddDependent(employeeId);
   const updateDependentMutation = useUpdateDependent(employeeId);
+  const { t } = useTranslation();
 
   // React Hook Form
   const { 
@@ -91,10 +93,10 @@ export const DependentDialog: React.FC<DependentDialogProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
           <div>
             <h3 className="text-base font-bold text-slate-800">
-              {isEditMode ? 'Modify Ayant Droit' : 'Add Ayant Droit'}
+              {isEditMode ? t('dependentDialog.editTitle') : t('dependentDialog.addTitle')}
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              {isEditMode ? 'Updating dependent info for' : 'Linking dependent to'} {employeeName}
+              {isEditMode ? t('dependentDialog.editSubtitle') : t('dependentDialog.addSubtitle')} {employeeName}
             </p>
           </div>
           <button 
@@ -111,11 +113,11 @@ export const DependentDialog: React.FC<DependentDialogProps> = ({
           {/* Full Name */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-              Full Name (Nom Complet) *
+              {t('dependentDialog.fullName')}
             </label>
             <input
               type="text"
-              placeholder="e.g. Marie Masengo"
+              placeholder={t('dependentDialog.fullNamePlaceholder')}
               {...register('full_name')}
               className={`w-full px-3.5 py-2 border rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition ${
                 errors.full_name ? 'border-red-400 focus:ring-red-400' : 'border-slate-300'
@@ -131,28 +133,28 @@ export const DependentDialog: React.FC<DependentDialogProps> = ({
             {/* Relationship */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                Relationship *
+                {t('dependentDialog.relationship')}
               </label>
               <select
                 {...register('relationship')}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition appearance-none cursor-pointer"
               >
-                <option value="CHILD">Child (Enfant)</option>
-                <option value="SPOUSE">Spouse (Époux/Épouse)</option>
+                <option value="CHILD">{t('dependents.child')}</option>
+                <option value="SPOUSE">{t('dependents.spouse')}</option>
               </select>
             </div>
 
             {/* Gender */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                Gender *
+                {t('dependentDialog.gender')}
               </label>
               <select
                 {...register('gender')}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition appearance-none cursor-pointer"
               >
-                <option value="F">Female</option>
-                <option value="M">Male</option>
+                <option value="F">{t('dependents.genderFemale')}</option>
+                <option value="M">{t('dependents.genderMale')}</option>
               </select>
             </div>
           </div>
@@ -160,7 +162,7 @@ export const DependentDialog: React.FC<DependentDialogProps> = ({
           {/* Birth Date */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-              Birth Date (Date de Naissance)
+              {t('dependentDialog.birthDate')}
             </label>
             <input
               type="date"
@@ -183,7 +185,7 @@ export const DependentDialog: React.FC<DependentDialogProps> = ({
             onClick={onClose}
             className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 bg-white hover:bg-slate-50 font-semibold text-sm transition cursor-pointer"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           
           <button
@@ -195,12 +197,12 @@ export const DependentDialog: React.FC<DependentDialogProps> = ({
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {isEditMode ? 'Saving...' : 'Adding...'}
+                {isEditMode ? t('dependentDialog.saving') : t('dependentDialog.adding')}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                {isEditMode ? 'Save Changes' : 'Add Dependent'}
+                {isEditMode ? t('common.save') : t('dependentDialog.addBtn')}
               </>
             )}
           </button>

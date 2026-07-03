@@ -1,4 +1,4 @@
-import { Medicine, PharmacyStock, MedicineBatch, StockMovement, GlobalSettings, MedicalCenter } from '../types';
+import { Medicine, PharmacyStock, MedicineBatch, StockMovement, GlobalSettings, MedicalCenter, Prescription } from '../types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/v1/pharmacy` : 'http://localhost:8001/api/v1/pharmacy';
 
@@ -132,5 +132,30 @@ export const pharmacyApi = {
       throw new Error(err.detail || 'Failed to import consumption');
     }
     return response.json();
-  }
+  },
+
+  getPrescriptions: async (medicalCenterId?: string, status?: string) => {
+    let url = `${API_BASE}/prescriptions/`;
+    const params = new URLSearchParams();
+    if (medicalCenterId) params.append('medical_center', medicalCenterId);
+    if (status) params.append('status', status);
+    
+    const qs = params.toString();
+    if (qs) url += `?${qs}`;
+    
+    const res = await fetchWithAuth(url);
+    return (Array.isArray(res) ? res : (res.results || [])) as Prescription[];
+  },
+
+  createPrescription: (data: Partial<Prescription> & { items: any[] }) => fetchWithAuth(`${API_BASE}/prescriptions/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }) as Promise<Prescription>,
+
+  dispensePrescription: (id: string, items: { [key: string]: number }, notes?: string) => fetchWithAuth(`${API_BASE}/prescriptions/${id}/dispense/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, notes }),
+  }) as Promise<{ success: boolean; movements_created: number }>
 };

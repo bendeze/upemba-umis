@@ -7,10 +7,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
 import openpyxl
 
-from .models import Medicine, StockMovement, PharmacyStock, GlobalSettings, MedicineBatch, MedicalCenter
+from .models import Medicine, StockMovement, PharmacyStock, GlobalSettings, MedicineBatch, MedicalCenter, Prescription, PrescriptionItem
 from .serializers import (
     MedicineSerializer, StockMovementSerializer, PharmacyStockSerializer,
-    GlobalSettingsSerializer, MedicineBatchSerializer, MedicalCenterSerializer
+    GlobalSettingsSerializer, MedicineBatchSerializer, MedicalCenterSerializer,
+    PrescriptionSerializer
 )
 from .services import PharmacyExcelService
 from core.mixins import AutoInvalidateCacheMixin, invalidate_model_cache
@@ -142,3 +143,46 @@ class ExcelConsumptionImportView(APIView):
             return Response({"success": True, "movements_created": movements_created}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"detail": f"Error processing file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+from rest_framework.decorators import action
+
+class PrescriptionViewSet(AutoInvalidateCacheMixin, viewsets.ModelViewSet):
+    queryset = Prescription.objects.all().prefetch_related('items__medicine', 'medical_center', 'employee', 'dependent')
+    serializer_class = PrescriptionSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['medical_center', 'status', 'patient_type', 'date']
+    ordering_fields = ['date', 'created_at']
+    pagination_class = None
+
+    def perform_create(self, serializer):
+        prescription = serializer.save()
+        items_data = self.request.data.get('items', [])
+        for item_data in items_data:
+            medicine_id = item_data.get('medicine_id')
+            qty = item_data.get('quantity_prescribed')
+            dosage = item_data.get('dosage_instructions', '')
+            PrescriptionItem.objects.create(
+                prescription=prescription,
+                medicine_id=medicine_id,
+                quantity_prescribed=qty,
+                dosage_instructions=dosage
+            )
+
+    @action(detail=True, methods=['post'])
+    def dispense(self, request, pk=None):
+        prescription = self.get_object()
+        item_quantities = request.data.get('items', {})
+        user_notes = request.data.get('notes', 'Dispensed from prescription')
+        
+        try:
+            with transaction.atomic():
+                movements = PharmacyExcelService.dispense_prescription(prescription, item_quantities, user_notes)
+                if movements:
+                    invalidate_model_cache(StockMovement)
+                    invalidate_model_cache(PharmacyStock)
+                    invalidate_model_cache(MedicineBatch)
+            
+            return Response({"success": True, "movements_created": len(movements)}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

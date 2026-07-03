@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Medicine, StockMovement, PharmacyStock, MedicineBatch, GlobalSettings, MedicalCenter
+from .models import Medicine, StockMovement, PharmacyStock, MedicineBatch, GlobalSettings, MedicalCenter, Prescription, PrescriptionItem
 
 class GlobalSettingsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -58,3 +58,24 @@ class StockMovementSerializer(serializers.ModelSerializer):
         
     def create(self, validated_data):
         return StockMovement.objects.create(**validated_data)
+
+class PrescriptionItemSerializer(serializers.ModelSerializer):
+    medicine = MedicineSerializer(read_only=True)
+    medicine_id = serializers.UUIDField(write_only=True)
+
+    class Meta:
+        model = PrescriptionItem
+        fields = ['id', 'medicine', 'medicine_id', 'quantity_prescribed', 'quantity_dispensed', 'dosage_instructions']
+
+class PrescriptionSerializer(serializers.ModelSerializer):
+    items = PrescriptionItemSerializer(many=True, read_only=True)
+    medical_center = MedicalCenterSerializer(read_only=True)
+    medical_center_id = serializers.UUIDField(write_only=True)
+
+    class Meta:
+        model = Prescription
+        fields = [
+            'id', 'medical_center', 'medical_center_id', 'date', 'patient_type',
+            'employee', 'dependent', 'external_patient_name',
+            'prescribing_doctor', 'diagnosis', 'status', 'items'
+        ]

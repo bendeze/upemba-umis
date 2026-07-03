@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     MedicineViewSet, StockMovementViewSet, PharmacyStockViewSet, 
     GlobalSettingsView, MedicineBatchViewSet, ExcelRequisitionImportView,
-    ExcelConsumptionImportView, MedicalCenterViewSet
+    ExcelConsumptionImportView, MedicalCenterViewSet, PrescriptionViewSet
 )
 
 router = DefaultRouter()
@@ -12,6 +12,7 @@ router.register(r'medicines', MedicineViewSet)
 router.register(r'stock-movements', StockMovementViewSet)
 router.register(r'pharmacy-stock', PharmacyStockViewSet)
 router.register(r'medicine-batches', MedicineBatchViewSet)
+router.register(r'prescriptions', PrescriptionViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

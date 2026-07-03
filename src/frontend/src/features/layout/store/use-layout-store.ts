@@ -3,7 +3,7 @@
 
 import { create } from 'zustand';
 
-export type TabId = 'beneficiaries' | 'settings' | 'dependents' | 'regions' | 'pharmacy';
+export type TabId = 'beneficiaries' | 'settings' | 'dependents' | 'regions' | 'pharmacy' | 'consultations';
 
 interface LayoutState {
   activeTab: TabId;

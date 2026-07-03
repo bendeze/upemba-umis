@@ -36,7 +36,7 @@ def update_stock_on_movement(sender, instance, created, **kwargs):
             batch.expiration_date = instance.expiration_date
         batch.save()
             
-    elif instance.movement_type in ['OUT', 'ADJUST']:
+    elif instance.movement_type in ['OUT', 'ADJUST', 'DISPENSE']:
         stock.quantity -= instance.quantity
         stock.save()
 

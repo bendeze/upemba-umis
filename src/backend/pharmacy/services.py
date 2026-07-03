@@ -111,3 +111,50 @@ class PharmacyExcelService:
             movements_created += 1
 
         return movements_created
+
+    @staticmethod
+    @transaction.atomic
+    def dispense_prescription(prescription, item_quantities, user_notes=''):
+        '''
+        item_quantities is a dict mapping prescription_item_id to quantity_to_dispense
+        '''
+        from pharmacy.models import StockMovement, PrescriptionItem
+        
+        movements = []
+        for item_id, qty in item_quantities.items():
+            if qty <= 0:
+                continue
+            
+            try:
+                item = PrescriptionItem.objects.get(id=item_id, prescription=prescription)
+            except PrescriptionItem.DoesNotExist:
+                continue
+                
+            # Create StockMovement
+            movement = StockMovement.objects.create(
+                medical_center=prescription.medical_center,
+                medicine=item.medicine,
+                movement_type='DISPENSE',
+                quantity=qty,
+                prescription_item=item,
+                notes=user_notes
+            )
+            movements.append(movement)
+            
+            # Update item dispensed quantity
+            item.quantity_dispensed += qty
+            item.save()
+            
+        # Update prescription status
+        all_items = prescription.items.all()
+        total_prescribed = sum(i.quantity_prescribed for i in all_items)
+        total_dispensed = sum(i.quantity_dispensed for i in all_items)
+        
+        if total_dispensed >= total_prescribed:
+            prescription.status = 'COMPLETED'
+        elif total_dispensed > 0:
+            prescription.status = 'PARTIAL'
+            
+        prescription.save()
+        
+        return movements

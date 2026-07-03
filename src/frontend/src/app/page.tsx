@@ -22,6 +22,7 @@ import { SettingsPage } from '@/features/settings/components/settings-page';
 import { DependentsPage } from '@/features/beneficiaries/components/dependents-page';
 import { RegionsPage } from '@/features/beneficiaries/components/regions-page';
 import { PharmacyDashboard } from '@/features/pharmacy/components/pharmacy-dashboard';
+import { ConsultationsDashboard } from '@/features/consultations/components/consultations-dashboard';
 
 // Lucide Icons
 import { ShieldAlert, Stethoscope, Lock, User, Mail } from 'lucide-react';
@@ -304,6 +305,8 @@ export default function Home() {
               <RegionsPage />
             ) : activeTab === 'pharmacy' ? (
               <PharmacyDashboard />
+            ) : activeTab === 'consultations' ? (
+              <ConsultationsDashboard />
             ) : (
               <DashboardPage 
                 onViewDetails={handleOpenDetails}

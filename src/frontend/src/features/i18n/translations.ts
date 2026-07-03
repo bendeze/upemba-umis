@@ -42,6 +42,12 @@ export const translations = {
     'sidebar.logout': 'Déconnexion',
     'sidebar.superuser': 'Super-utilisateur',
     
+    // Consultations
+    'consultations.title': 'Consultations Médicales',
+    'consultations.subtitle': 'Gérer les visites des patients et les prescriptions',
+    'consultations.new': 'Nouvelle Consultation',
+    'consultations.search': 'Rechercher un patient ou un diagnostic...',
+    
     // Header
     'header.datetime': 'Date/Heure actuelle',
     'header.database': 'Base de données en ligne',
@@ -271,6 +277,7 @@ export const translations = {
     'pharmacy.tabStock': 'Stock Actuel & Alertes',
     'pharmacy.tabBatches': 'Lots de Médicaments',
     'pharmacy.tabMedicines': 'Répertoire des Médicaments',
+    'pharmacy.tabPrescriptions': 'Prescriptions (Dispensation)',
     'pharmacy.tabIn': 'Enregistrer une Entrée (IN)',
     'pharmacy.tabOut': 'Enregistrer une Consommation (OUT)',
     'pharmacy.tabHistorical': 'Saisir une Consommation Passée',
@@ -466,6 +473,12 @@ export const translations = {
     'sidebar.settings': 'Settings',
     'sidebar.logout': 'Log Out',
     'sidebar.superuser': 'Superuser',
+    
+    // Consultations
+    'consultations.title': 'Medical Consultations',
+    'consultations.subtitle': 'Manage patient visits and prescriptions',
+    'consultations.new': 'New Consultation',
+    'consultations.search': 'Search patient or diagnosis...',
     
     // Header
     'header.datetime': 'Current Date/Time',
@@ -695,6 +708,7 @@ export const translations = {
     'pharmacy.tabStock': 'Current Stock & Alerts',
     'pharmacy.tabBatches': 'Medicine Batches',
     'pharmacy.tabMedicines': 'Medicines Directory',
+    'pharmacy.tabPrescriptions': 'Prescriptions & Consultations',
     'pharmacy.tabIn': 'Record Entrance (IN)',
     'pharmacy.tabOut': 'Record Consumption (OUT)',
     'pharmacy.tabHistorical': 'Record Past Consumption',

@@ -142,7 +142,7 @@ if (-not (Test-Path $scriptsDir)) {
     $scriptsDir = ""
 }
 
-$launchCmd = "cmd.exe /c umis-start"
+$launchCmd = "cmd.exe /c py -m cli"
 
 $vbsCode = 'Set sh = CreateObject("Wscript.Shell")' + "`r`n"
 $vbsCode += 'sh.Run "' + $launchCmd + '", 0, False'

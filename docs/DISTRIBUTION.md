@@ -129,21 +129,9 @@ The script will automatically detect the local `.whl` file and install it withou
 
 ## 4. Automating Startup on Employee Machines
 
-To provide a seamless experience for clinic employees, you can automate launching UMIS when their Windows machine starts up. We have provided an interactive startup utility at the root of the project:
+To provide a seamless experience for clinic employees, the 1-click installer (`install-umis.ps1`) completely automates the startup logic. It creates a hidden VBScript launcher and adds a shortcut to the Windows Startup folder. 
 
-📁 **`configure-startup.bat`** (Batch script wrapper)
-📁 **`scripts/configure-startup.ps1`** (Core automation logic)
+This means that whenever the computer boots, UMIS will start **silently in the background** without any distracting terminal windows, and it will automatically open the dashboard in the employee's default web browser.
 
-### How to Use the Startup Utility
-1. Copy **`configure-startup.bat`** and the **`scripts/`** folder to the employee's computer.
-2. If using the standalone distribution, ensure **`UMIS.exe`** is also placed on the computer.
-3. Double-click **`configure-startup.bat`** (no administrator privileges required).
-4. Select the configuration that matches the deployment:
-   * **Option 1 (Standalone EXE):** The script automatically scans for `UMIS.exe`. If it is not in the folder, it opens a native Windows File Browser for you to locate it.
-   * **Option 2 (Python Wheel):** Sets up startup using the global `umis-start` command.
-5. Choose the **Window Style** for the launch:
-   * **Hidden (Background) [Recommended]:** UMIS boots completely silently in the background. No terminal window pops up on the employee's screen, but the system starts and opens their default web browser automatically!
-   * **Minimized:** Launches minimized in the taskbar.
-   * **Normal Window:** Opens with a visible command prompt window displaying boot logs.
-6. To disable automatic startup at any time, run the script again and select **Option 3: Remove UMIS from Startup**.
+If you ever need to debug the startup process or reconfigure the shortcuts manually, you can use the legacy configuration script located at `scripts/configure-startup.ps1`.
 

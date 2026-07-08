@@ -1,43 +1,50 @@
-# Upemba Medical Information System (UMIS)
+<div align="center">
+  <img src="https://raw.githubusercontent.com/bendeze/upemba-medical/main/docs/assets/logo.png" alt="UMIS Logo" width="200" />
 
-UMIS is a local, offline-first medical information system built exclusively for the medical personnel of the Upemba National Park (Lusinga). It is designed to operate securely in remote environments with limited internet connectivity.
+  # Upemba Medical Information System (UMIS)
 
-## Features
-- **Offline-First Architecture**: Built to function fully without internet.
-- **Beneficiaries Management**: Secure management of employees and their dependents.
-- **Pharmacy & Inventory**: Track stock movements, consumption, and historical requisitions.
+  *A robust, offline-first medical information system designed for remote environments.*
+
+  [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+  [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+  [![Django](https://img.shields.io/badge/Django-6.0+-092E20)](https://www.djangoproject.com/)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+</div>
+
+## Overview
+UMIS is a local, offline-first medical information system built exclusively for the medical personnel of the Upemba National Park (Lusinga). It is designed to operate securely and efficiently in remote environments with zero or limited internet connectivity.
+
+## ✨ Features
+- **Offline-First Architecture**: Designed to function fully without an internet connection using local SQLite and standalone deployments.
+- **Beneficiaries Management**: Secure, comprehensive management of employees and their dependents.
+- **Pharmacy & Inventory**: Track stock movements, consumption, historical requisitions, and low-stock alerts.
 - **Secure Access**: JWT-based authentication with strict domain validations (`@forgottenparks.org`).
-- **Bilingual Interface**: Fully translated in English and French.
+- **Bilingual Interface**: Fully translated and localized in English and French.
+- **1-Click Installation**: Frictionless USB or Internet-based Windows installer for zero-touch deployments.
 
-## Installation via PyPI
+## 🚀 Quickstart Installation
 
-The project is packaged and distributed via PyPI for easy updates. To install or update the system:
+We offer a 1-click installer for Windows users (via PowerShell).
 
-```bash
-# Using pip
-pip install --upgrade umis
-
-# Using uv (recommended)
-uv pip install --upgrade umis
+```powershell
+powershell -c "irm https://raw.githubusercontent.com/bonheurNE07/upemba-medical/main/scripts/install-umis.ps1 | iex"
 ```
+*For offline installation via USB, please refer to our [Distribution Guide](DISTRIBUTION_GUIDE.md).*
 
-## Running the Application
+## 🏗️ Architecture
 
-After installation, start the server using the built-in CLI command:
-
-```bash
-umis-start
-```
-
-The application will be accessible at `http://localhost:8001/`.
-
-## Architecture
+UMIS utilizes a modern monolithic-but-decoupled architecture packaged together for offline distribution:
 - **Backend**: Django & Django REST Framework
-- **Frontend**: Next.js (React), TailwindCSS, built as static files and served by Django.
+- **Frontend**: Next.js (React), TailwindCSS, built as static files and served natively by Django.
+- **Database**: SQLite (Zero configuration needed).
 
-## Development
+## 🤝 Contributing
 
-See the `src/` directory for backend and frontend source code. This project uses `uv` for Python dependency management and `npm` for the frontend.
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on how to set up your local development environment, run the frontend and backend, and submit Pull Requests.
 
-## License
-MIT License
+Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

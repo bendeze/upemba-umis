@@ -17,7 +17,32 @@ def main():
     
     # 2. Setup Django framework internal systems
     import django
-    django.setup()
+    try:
+        django.setup()
+    except Exception as e:
+        print(f"-> Failed to initialize Django: {str(e)}")
+        sys.exit(1)
+        
+    local_port = int(os.environ.get("PORT", 8001))
+    
+    # 2.5. Kill any ghost processes on the port to prevent [WinError 10048] Address in use
+    def kill_process_on_port(port):
+        import subprocess
+        import re
+        if sys.platform == "win32":
+            try:
+                output = subprocess.check_output(f"netstat -ano | findstr :{port}", shell=True).decode(errors='ignore')
+                for line in output.strip().split('\n'):
+                    if f":{port}" in line and "LISTENING" in line:
+                        pid = line.strip().split()[-1]
+                        if pid and pid != "0":
+                            print(f"-> Terminating existing ghost process (PID: {pid}) on port {port}...")
+                            subprocess.run(f"taskkill /PID {pid} /F", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            time.sleep(1) # Give OS a moment to free the socket
+            except Exception:
+                pass
+                
+    kill_process_on_port(local_port)
     
     # 3. Execute database migrations programmatically
     print("\n[1/4] Synchronizing relational database structures...")
@@ -57,7 +82,6 @@ def main():
         print("-> Administrative profiles are active and secured.")
         
     # 5. Spin up browser mapping local client port
-    local_port = 8001
     url = f"http://127.0.0.1:{local_port}/"
     print(f"\n[3/4] Launching default client browser at {url}...")
     

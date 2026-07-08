@@ -56,7 +56,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="umis",
-    version="1.0.19",
+    version="1.0.20",
     author="Upemba National Park Medical Department",
     author_email="bonheurndezenc@gmail.com",
     description="Upemba Medical Information System - Local Offline Package",

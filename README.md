@@ -13,9 +13,9 @@
 </div>
 
 ## Overview
-UMIS is a local, offline-first medical information system built exclusively for the medical personnel of the Upemba National Park (Lusinga). It is designed to operate securely and efficiently in remote environments with zero or limited internet connectivity.
+**UMIS (Upemba Medical Information System)** is a comprehensive medical management platform originally tailored for the Upemba National Park Medical Department. Built with a modern stack (Django & Next.js), its modular architecture makes it highly adaptable and ready to be customized by other clinics, hospitals, and medical establishments.
 
-## ✨ Features
+## Features
 - **Offline-First Architecture**: Designed to function fully without an internet connection using local SQLite and standalone deployments.
 - **Beneficiaries Management**: Secure, comprehensive management of employees and their dependents.
 - **Pharmacy & Inventory**: Track stock movements, consumption, historical requisitions, and low-stock alerts.
@@ -23,7 +23,7 @@ UMIS is a local, offline-first medical information system built exclusively for 
 - **Bilingual Interface**: Fully translated and localized in English and French.
 - **1-Click Installation**: Frictionless USB or Internet-based Windows installer for zero-touch deployments.
 
-## 🚀 Quickstart Installation
+## Quickstart Installation
 
 We offer a 1-click installer for Windows users (via PowerShell).
 
@@ -32,14 +32,14 @@ powershell -c "irm https://raw.githubusercontent.com/bonheurNE07/upemba-medical/
 ```
 *For offline installation via USB, please refer to our [Distribution Guide](DISTRIBUTION_GUIDE.md).*
 
-## 🏗️ Architecture
+## Architecture
 
 UMIS utilizes a modern monolithic-but-decoupled architecture packaged together for offline distribution:
 - **Backend**: Django & Django REST Framework
 - **Frontend**: Next.js (React), TailwindCSS, built as static files and served natively by Django.
 - **Database**: SQLite (Zero configuration needed).
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on how to set up your local development environment, run the frontend and backend, and submit Pull Requests.
 

@@ -178,9 +178,18 @@ if ($scriptsDir) { $DesktopShortcut.WorkingDirectory = $scriptsDir }
 if (Test-Path $IconPath) { $DesktopShortcut.IconLocation = $IconPath }
 $DesktopShortcut.Save()
 
+# Create Stop Desktop Shortcut
+$DesktopStopLnkPath = Join-Path $DesktopFolder "Stop UMIS.lnk"
+$StopShortcut = $WshShell.CreateShortcut($DesktopStopLnkPath)
+$StopShortcut.TargetPath = "cmd.exe"
+$StopShortcut.Arguments = "/c `"py -m cli --stop & timeout /t 3`""
+$StopShortcut.WindowStyle = 1
+if ($scriptsDir) { $StopShortcut.WorkingDirectory = $scriptsDir }
+$StopShortcut.Save()
+
 Write-Host "[OK] VBScript Launcher created: $VbsPath" -ForegroundColor $Green
 Write-Host "[OK] Added to Startup Folder (Boots silently with Windows)" -ForegroundColor $Green
-Write-Host "[OK] Desktop Shortcut Created" -ForegroundColor $Green
+Write-Host "[OK] Start & Stop Desktop Shortcuts Created" -ForegroundColor $Green
 
 # 5. Start the Application immediately
 Write-Host ""

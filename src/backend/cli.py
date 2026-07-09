@@ -42,6 +42,12 @@ def main():
             except Exception:
                 pass
                 
+    if "--stop" in sys.argv:
+        print(f"\n[*] Stopping all UMIS background processes on port {local_port}...")
+        kill_process_on_port(local_port)
+        print("[OK] UMIS has been fully stopped.\n")
+        sys.exit(0)
+        
     kill_process_on_port(local_port)
     
     # 3. Execute database migrations programmatically

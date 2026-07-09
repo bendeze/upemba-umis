@@ -56,7 +56,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="umis",
-    version="1.0.25",
+    version="1.0.26",
     author="Upemba National Park Medical Department",
     author_email="bonheurndezenc@gmail.com",
     description="Upemba Medical Information System - Local Offline Package",
@@ -76,6 +76,7 @@ setup(
         "djangorestframework>=3.17.1",
         "djangorestframework-simplejwt>=5.5.1",
         "openpyxl>=3.1.5",
+        "reportlab>=4.2.0",
         "requests>=2.32.3",
         "uvicorn>=0.22.0",
         "waitress>=3.0.0",

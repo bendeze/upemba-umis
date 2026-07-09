@@ -156,8 +156,9 @@ $scriptsDir = (& $pythonExe -c "import os, sys; print(os.path.join(os.path.dirna
 
 $launchCmd = "cmd.exe /c `"`"$pythonExe`" -m cli > `"%USERPROFILE%\.umis\server.log`" 2>&1`""
 
+$vbsLaunchCmd = $launchCmd -replace '"', '""'
 $vbsCode = 'Set sh = CreateObject("Wscript.Shell")' + "`r`n"
-$vbsCode += 'sh.Run "' + $launchCmd + '", 0, False'
+$vbsCode += 'sh.Run "' + $vbsLaunchCmd + '", 0, False'
 Set-Content -Path $VbsPath -Value $vbsCode -Encoding Ascii
 
 $WshShell = New-Object -ComObject WScript.Shell

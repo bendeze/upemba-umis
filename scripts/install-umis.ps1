@@ -128,7 +128,7 @@ if (-not (Test-Path $UmisDir)) {
     New-Item -ItemType Directory -Path $UmisDir -Force | Out-Null
 }
 
-$BatPath = Join-Path $UmisDir "umis-launcher.bat"
+$VbsPath = Join-Path $UmisDir "umis-launcher.vbs"
 $StartupFolder = [System.Environment]::GetFolderPath('Startup')
 $StartupLnkPath = Join-Path $StartupFolder "UMIS.lnk"
 $DesktopFolder = [System.Environment]::GetFolderPath('Desktop')
@@ -150,32 +150,29 @@ try {
     Write-Host "[!] Could not fetch icon, using default." -ForegroundColor $Yellow
 }
 
-$batCode = "@echo off`r`n"
-$batCode += "title Serveur UMIS (Ne pas fermer cette fenetre)`r`n"
-$batCode += "echo ==========================================`r`n"
-$batCode += "echo   UMIS SERVER IS RUNNING`r`n"
-$batCode += "echo   Close this window to stop the server.`r`n"
-$batCode += "echo ==========================================`r`n"
-$batCode += "cd /d `"$scriptsDir`"`r`n"
-$batCode += "`"$pythonExe`" -m cli`r`n"
-$batCode += "pause`r`n"
-Set-Content -Path $BatPath -Value $batCode -Encoding Ascii
+$launchCmd = "cmd.exe /c `"`"$pythonExe`" -m cli > `"%USERPROFILE%\.umis\server.log`" 2>&1`""
+
+$vbsLaunchCmd = $launchCmd -replace '"', '""'
+$vbsCode = 'Set sh = CreateObject("Wscript.Shell")' + "`r`n"
+$vbsCode += 'sh.Run "' + $vbsLaunchCmd + '", 0, False'
+Set-Content -Path $VbsPath -Value $vbsCode -Encoding Ascii
 
 $WshShell = New-Object -ComObject WScript.Shell
 
-# Create Startup Shortcut (Optional, maybe we don't want it to pop up on startup?)
-# For now we keep it but it will show a window on boot.
+# Create Startup Shortcut
 $StartupShortcut = $WshShell.CreateShortcut($StartupLnkPath)
-$StartupShortcut.TargetPath = $BatPath
-$StartupShortcut.WindowStyle = 1
+$StartupShortcut.TargetPath = "wscript.exe"
+$StartupShortcut.Arguments = "`"$VbsPath`""
+$StartupShortcut.WindowStyle = 7
 if ($scriptsDir) { $StartupShortcut.WorkingDirectory = $scriptsDir }
 if (Test-Path $IconPath) { $StartupShortcut.IconLocation = $IconPath }
 $StartupShortcut.Save()
 
 # Create Desktop Shortcut
 $DesktopShortcut = $WshShell.CreateShortcut($DesktopLnkPath)
-$DesktopShortcut.TargetPath = $BatPath
-$DesktopShortcut.WindowStyle = 1
+$DesktopShortcut.TargetPath = "wscript.exe"
+$DesktopShortcut.Arguments = "`"$VbsPath`""
+$DesktopShortcut.WindowStyle = 7
 if ($scriptsDir) { $DesktopShortcut.WorkingDirectory = $scriptsDir }
 if (Test-Path $IconPath) { $DesktopShortcut.IconLocation = $IconPath }
 $DesktopShortcut.Save()
@@ -201,9 +198,9 @@ if ($scriptsDir) { $StopShortcut.WorkingDirectory = $scriptsDir }
 if (Test-Path $StopIconPath) { $StopShortcut.IconLocation = $StopIconPath }
 $StopShortcut.Save()
 
-Write-Host "[OK] Batch Launcher created: $BatPath" -ForegroundColor $Green
-Write-Host "[OK] Added to Startup Folder" -ForegroundColor $Green
-Write-Host "[OK] Desktop Shortcut Created (Leaves window open so you can see logs and close to stop)" -ForegroundColor $Green
+Write-Host "[OK] VBScript Launcher created: $VbsPath" -ForegroundColor $Green
+Write-Host "[OK] Added to Startup Folder (Boots silently with Windows)" -ForegroundColor $Green
+Write-Host "[OK] Start & Stop Desktop Shortcuts Created" -ForegroundColor $Green
 
 # 5. Start the Application immediately
 Write-Host ""
@@ -218,8 +215,8 @@ try {
     # Ignore errors if no server is running
 }
 
-# Run the BAT script
-Invoke-Item $BatPath
+# Run the VBS script to start server invisibly
+wscript.exe $VbsPath
 
 Write-Host ""
 Write-Host "======================================================================" -ForegroundColor $Cyan

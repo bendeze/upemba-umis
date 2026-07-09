@@ -152,7 +152,9 @@ try {
     Write-Host "[!] Could not fetch icon, using default." -ForegroundColor $Yellow
 }
 
-$launchCmd = "cmd.exe /c py -m cli > `"%USERPROFILE%\.umis\server.log`" 2>&1"
+$scriptsDir = (& $pythonExe -c "import os, sys; print(os.path.join(os.path.dirname(sys.executable), 'Scripts'))").Trim()
+
+$launchCmd = "cmd.exe /c `"`"$pythonExe`" -m cli > `"%USERPROFILE%\.umis\server.log`" 2>&1`""
 
 $vbsCode = 'Set sh = CreateObject("Wscript.Shell")' + "`r`n"
 $vbsCode += 'sh.Run "' + $launchCmd + '", 0, False'
@@ -182,7 +184,7 @@ $DesktopShortcut.Save()
 $DesktopStopLnkPath = Join-Path $DesktopFolder "Stop UMIS.lnk"
 $StopShortcut = $WshShell.CreateShortcut($DesktopStopLnkPath)
 $StopShortcut.TargetPath = "cmd.exe"
-$StopShortcut.Arguments = "/c `"py -m cli --stop & timeout /t 3`""
+$StopShortcut.Arguments = "/c `"`"$pythonExe`" -m cli --stop & timeout /t 3`""
 $StopShortcut.WindowStyle = 1
 if ($scriptsDir) { $StopShortcut.WorkingDirectory = $scriptsDir }
 $StopShortcut.Save()

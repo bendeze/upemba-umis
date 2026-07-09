@@ -152,7 +152,7 @@ try {
     Write-Host "[!] Could not fetch icon, using default." -ForegroundColor $Yellow
 }
 
-$launchCmd = "cmd.exe /c py -m cli"
+$launchCmd = "cmd.exe /c py -m cli > `"%USERPROFILE%\.umis\server.log`" 2>&1"
 
 $vbsCode = 'Set sh = CreateObject("Wscript.Shell")' + "`r`n"
 $vbsCode += 'sh.Run "' + $launchCmd + '", 0, False'
